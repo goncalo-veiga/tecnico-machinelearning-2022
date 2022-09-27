@@ -64,6 +64,8 @@ print(df)
 sse = np.sum((y_train_pred - y_train)**2)
 print('SSE:', sse)
 print('MSE:', scores(y_train,y_train_pred,'r'))
+score = r2_score(y_train, y_train_pred) #regression R^2 score
+print('Score R^2', score)
 
 #print(param_beta)
 #print(param_beta0)
