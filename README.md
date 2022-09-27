@@ -147,15 +147,14 @@ be the F1 score.
 - investigate which are the most suitable classifiers for image tasks;
 - investigate ways to deal with imbalance in classification tasks.
 
-(^1) https://scikit-learn.org/stable/
+(1) https://scikit-learn.org/stable/
 
-
-```
 ![image1](images/fig1.png)
+```
 Figure 1: Image of a butterfly where eyespots are shown in orange and spots are shown in pink.
 ```
-```
 ![image2](images/fig2.png)
+```
 Figure 2: An eyespot image and its ground truth segmentation mask.
 ```
 ## 5.2 Second Task
