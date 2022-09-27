@@ -99,10 +99,8 @@ in the training data. Of course, you may apply the same method adopted in the pr
 (where there were no outliers) but this will probably lead to bad prediction results because you are
 trying to apply the same prediction model to both types of examples.
 
-
-```
 In fact, the training set is given by
-```
+
 ```
 Ttrain= {(x^1,y^1),...,(x^n,y^n)}
 ```
