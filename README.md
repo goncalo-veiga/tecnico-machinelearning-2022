@@ -1,4 +1,4 @@
-# Machine Learning Project, 2022/
+# Machine Learning Project, 2022
 
 ```
 Prepared by Prof. Margarida Silveira, Prof. Catarina Barata and Prof. Jorge Marques
@@ -63,7 +63,7 @@ The first problem is a basic linear regression problem.
 Consider a training set withn= 100examples
 
 ```
-Ttrain= {$(x^1,y^1),...,(x^n,y^n)}
+Ttrain= {$(x^1,y^1),...,(x^n,y^n)$}
 ```
 
 where each example comprises a feature vector,x(i) ∈R^10 , with 10 features, and an outcome
@@ -71,7 +71,7 @@ y(i)∈R, fori= 1,...,n.
 We wish to train a linear predictor
 
 ```
-yˆ=f(x) = [1 $(x^T)]β,
+yˆ=f(x) = [1 $(x^T)$]β,
 ```
 
 using the sum of squared errors (SSE) criterion, computed in the training set.
@@ -79,7 +79,7 @@ To evaluate the performance, the estimated predictor should be applied to an ind
 of data (test set) withn′= 1000examples
 
 ```
-Ttest= {$(x^1,y^1),...,(x^n,y^n)}
+Ttest= {$(x^1,y^1),...,(x^n,y^n)$}
 ```
 
 provided in Fenix web page. The students should predict the outcome for each test example
@@ -104,7 +104,7 @@ trying to apply the same prediction model to both types of examples.
 In fact, the training set is given by
 ```
 ```
-Ttrain= {$(x^1,y^1),...,(x^n,y^n)}
+Ttrain= {$(x^1,y^1),...,(x^n,y^n)$}
 ```
 as before, but we do not know which examples aregoodand which arenot.
 When it comes to evaluating the model, we assume that the test set,Ttest,does not have any
