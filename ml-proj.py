@@ -7,6 +7,10 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import BayesianRidge
+from sklearn.linear_model import LassoLars
+from sklearn.linear_model import SGDRegressor
+from sklearn.linear_model import TheilSenRegressor
 from sklearn.metrics import mean_squared_error as MSE
 from sklearn.metrics import balanced_accuracy_score as BACC
 
