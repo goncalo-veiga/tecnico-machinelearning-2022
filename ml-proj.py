@@ -1,4 +1,3 @@
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -7,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
+from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import LassoLars
 from sklearn.linear_model import SGDRegressor
@@ -87,7 +87,7 @@ num_rows_y, num_cols_y = y_train.shape
 #print ('Y:', num_rows_y, num_cols_y)
 
 ## Define models and fitting the training data on it 
-model = LinearRegression()
+model = Ridge(alpha=0.06)
 model_LR = model.fit(x_train, y_train)
 
 ## Define predictors for training set and test ste
@@ -98,6 +98,7 @@ y_pred = model.predict(x_test)
 ## Evaluate regression parameters values
 param_beta0 = model.intercept_
 param_beta = model.coef_
+print("Beta0:",param_beta0,"beta:",param_beta)
 
 ## Define dataframe
 df = pd.DataFrame({'y_train': y_train.tolist(), 'y_train_pred': y_train_pred.tolist()})
@@ -114,7 +115,7 @@ print("Mean Absolute Error:", MAE)
 
 """Validation"""
 ## Define KFold validation method 
-kf = KFold(n_splits=5)
+kf = KFold(n_splits=4)
 val_scores = []
 
 ## KFold Validation for any type of regression and mode defined
@@ -128,9 +129,31 @@ for train_index, test_index in kf.split(x_train):
 print("\n K Folds Validation Scores method:", val_scores)
 
 ## Cross Validation for any type of regression
-print("\n Cross Validation Scores method:", cross_val_score(LinearRegression(), x_train, y_train, cv= 3))
+#print("\n Cross Validation Scores method:", cross_val_score(LinearRegression(), x_train, y_train, cv= 3))
 
+## Calculate ideal alpha
+ridge_cv = RidgeCV(alphas = [0.05,0.06,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17]).fit(x_train,y_train)
+
+## Calculate best split number
+min_score = 0
+min_step = 0
+for step in range(2,50):
+    print("Now testing step:",step)
+    my_values = cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = step)
+    my_score = np.mean(my_values)
+    if my_score > min_score:
+        min_score = my_score
+        min_step = step
+
+print("min score:", min_score, "split:", min_step)
+print("\n Cross Validation Scores method:", cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = min_step))
+
+#score
+print("The train score for ridge model is {}".format(ridge_cv.score(x_train, y_train)))
+print("alpha OP:", ridge_cv.alpha_)
 
 #print(df['y_train'])
 
 #sns.lmplot(data=df, x="y_train", y="y_train_pred")
+
+
