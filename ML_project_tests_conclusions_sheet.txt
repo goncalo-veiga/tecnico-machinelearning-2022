@@ -1,0 +1,19 @@
+Machine Learning Project 2022/2023
+
+1º Regression Problem Tests/Conclusions:
+
+- Tested Linear Regression vs Lasso Regression vs Ridge Regression
+- Tested Underfitting and Overfitting in each model
+- Tested a Validation Set with KFold / Cross Validation
+- Linear Regression might have better stats in the training model than the Ridge Regression but LR can be overfitting in unseen data.
+- We don't have a complete Test dataset so to avoid overfitting we conclude that the Ridge Regression (which means giving a L2 penalty) although it has a similar but a little bit 
+worse stats in the training model than the Linear Regression it can prevent overfitting in unseen data. 
+- Ridge Regression is better than Lasso Regression in this study case because we have a high number of parameters (nºbeta = 10)
+- Lasso Regression give us a bad performance on the training test and validation test so we have discarded
+- To use Ridge Regression we should know the value of the best regularization parameter (alpha) so we tested in the validation set which alpha value caused a better perfomance training 
+perfomance and validation. (alpha = 0.06)
+- Usually Ridge Regression has a low variance and an biased balance
+
+To Do:
+- Plot the data -> excel, matplotplib, seaborn
+- See the relationship between the data 
