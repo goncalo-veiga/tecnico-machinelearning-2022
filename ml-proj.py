@@ -7,11 +7,6 @@ from sklearn.linear_model import Lasso
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import RidgeCV
-from sklearn.linear_model import BayesianRidge
-from sklearn.linear_model import LassoLars
-from sklearn.linear_model import SGDRegressor
-from sklearn.linear_model import TheilSenRegressor
-from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_absolute_error 
