@@ -1,49 +1,40 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import RidgeCV
-from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LassoCV
+from sklearn.preprocessing import StandardScaler 
+from sklearn.preprocessing import normalize
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_absolute_error 
 from sklearn.metrics import mean_squared_error as MSE
-from sklearn.metrics import balanced_accuracy_score as BACC
-from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
+from sklearn.model_selection import cross_val_score, KFold
 
-## Scores between the y real and y predicted
+## This function returns MSE, SSE and R^2 scores
 def scores(y_real,y_pred,mode):
-    ###y_real - ground truth vector 
-    ###y_pred - vector of predictions, must have the same shape as y_real
-    ###mode   - if evaluating regression ('r') or classification ('c')
     
-    if y_real.shape != y_pred.shape:
-        print('confirm that both of your inputs have the same shape')
-    else:
-        if mode == 'r':
-            mse = MSE(y_real,y_pred)
-            print('The Mean Square Error is', mse)
-            return mse
+    if mode == 'm':
+        mse = MSE(y_real,y_pred)
+        return mse
+    
+    elif mode == 's':
+        sse = np.sum((y_real - y_pred)**2)
+        return sse
+    
+    elif mode == 'r2':
+        return r2_score(y_real, y_pred)
 
-        
-        elif mode == 's':
-            sse = np.sum((y_real - y_pred)**2)
-            print('The Sum of Squares Error is', sse)
-            return sse
-        
-        else:
-            print('You must define the mode input.')
-
-## Validation Scores inside the validation set             
+## This function returns the scores for the validation set             
 def model_val_scores(model, x_train_val, x_test_val, y_train_val, y_test_val, mode):
     
     model.fit(x_train_val, y_train_val)
     y_pred = model.predict(x_test_val)
     
-    if mode == 'r':
+    if mode == 'm':
         mse = MSE(y_test_val,y_pred)
         return mse
         
@@ -57,88 +48,82 @@ def model_val_scores(model, x_train_val, x_test_val, y_train_val, y_test_val, mo
     elif mode == 'r2':
         return r2_score(y_test_val, y_pred)
     
-    else:
-        print('You must define the mode input.')
-    
 ## Load datasets
 x_train = np.load('Xtrain_Regression1.npy')
 y_train = np.load('Ytrain_Regression1.npy')
 x_test = np.load('Xtest_Regression1.npy')
 
 ## Scalling the data in case of different types of data 
-sc_X = StandardScaler()
-x_train = sc_X.fit_transform(x_train)
-x_test = sc_X.transform(x_test)
+#sc_X = StandardScaler()
+#x_train = sc_X.fit_transform(x_train)
+#x_test = sc_X.transform(x_test)
+
+## Normalize the data (got worse results)
+#x_train = normalize(x_train)
+#x_test = normalize(x_test)
+#y_train = normalize(y_train)
 
 ## Evaluate training sets shape
 num_rows_x, num_cols_x = x_train.shape
 num_rows_y, num_cols_y = y_train.shape
 
-## Define models and fitting the training data on it 
+## Define model and fit the training data on it 
 model = Ridge(alpha=0.06)
-model_LR = model.fit(x_train, y_train)
+model_f = model.fit(x_train, y_train)
 
-## Define predictors for training set and test ste
+## Predict for training set and test set
 y_train_pred = model.predict(x_train)
-y_pred = model.predict(x_test)
+y_test = model.predict(x_test)
+
+## Saves the predicted output for the test set in .npy file
+np.save('y_test', y_test)
 
 ## Evaluate regression parameters values
 param_beta0 = model.intercept_
 param_beta = model.coef_
-print("Beta0:",param_beta0,"beta:",param_beta)
 
 ## Define dataframe
 df = pd.DataFrame({'y_train': y_train.tolist(), 'y_train_pred': y_train_pred.tolist()})
 df.head()
-print(df)
 
-## Calculate SSE, MSE, R^2 and MAE
-print("-------Without Validation Results-------")
-print('SSE:', scores(y_train,y_train_pred,'s'))
-print('MSE:', scores(y_train,y_train_pred,'r'))
-R2_score = r2_score(y_train, y_train_pred) #regression R^2 score
-print('R^2:', R2_score) 
-MAE = mean_absolute_error(y_train, y_train_pred)
-print("Mean Absolute Error:", MAE)
+## Training set scores: SSE, MSE, R^2 and MAE
+print("------- Training Set Scores -------")
+print('Sum of Squared Error (SSE):', scores(y_train,y_train_pred,'s'))
+print('Mean Squared Error (MSE):', scores(y_train,y_train_pred,'m')) 
+print('Root Mean Square Error (RMSE)', np.sqrt(scores(y_train,y_train_pred,'m')))
+print('R-Squared (R^2):', scores(y_train, y_train_pred, 'r2')) 
+print("Mean Absolute Error (MAE):",mean_absolute_error(y_train, y_train_pred))
 
-"""Validation"""
-print("-------Validation Set Results-------")
-## Define KFold validation method 
-kf = KFold(n_splits=4)
+## Validation Phase
+print("------- Validation Set Scores -------")
+## KFold validation method for any type of regression 
+n_splits=4
+kf = KFold(n_splits, shuffle = False)
 val_scores = []
 
-## KFold Validation for any type of regression and mode defined
 for train_index, test_index in kf.split(x_train):
-    #print("TRAIN:", train_index, "\nTEST:", test_index)
     x_train_val, x_test_val = x_train[train_index], x_train[test_index]
     y_train_val, y_test_val = y_train[train_index], y_train[test_index]
     val_scores.append(model_val_scores(Ridge(alpha=0.06), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+print("SSE Score using K Folds Validation with",n_splits,"splits:", val_scores)
+               
+## Choose the ideal Ridge Hyperparameter alpha according to the highest Cross Validation score
+ridge_cv = RidgeCV(alphas = [0.05,0.06,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17]).fit(x_train,y_train)
+print("Total Cross Validation Score: {}".format(ridge_cv.score(x_train, y_train)))
+print("Best Ridge Hyperparameter alpha:", ridge_cv.alpha_)
 
-
-print("K Folds Validation Scores method:", val_scores)
-print("SSE Score:",np.mean(val_scores))
-
-## Calculate ideal alpha
-ridge_cv = RidgeCV(alphas = [0.05,0.06,0.08,0.09,0.1]).fit(x_train,y_train)
-
-## Calculate best split number
-min_score = 0
+## Calculate best split number with Cross Validation
+best_score = 0
 min_step = 0
 for step in range(2,50):
     #print("Now testing step:",step)
     my_values = cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = step)
     my_score = np.mean(my_values)
-    if my_score > min_score:
-        min_score = my_score
+    if my_score > best_score:
+        best_score = my_score
         min_step = step
-
-#print("Min Score:", min_score, "split:", min_step)
-
-print("Cross Validation Scores method:", cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = min_step))
-
-#score
-print("The train score for ridge model is {}".format(ridge_cv.score(x_train, y_train)))
-print("Best alpha:", ridge_cv.alpha_)
+        
+print("Cross Validation Scores with", min_step,"splits:", cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = min_step))
 
 
 
