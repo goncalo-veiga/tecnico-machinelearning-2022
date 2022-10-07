@@ -30,9 +30,11 @@ def scores(y_real,y_pred,mode):
 
 ## This function returns the scores for the validation set             
 def model_val_scores(model, x_train_val, x_test_val, y_train_val, y_test_val, mode):
-    
+        
     model.fit(x_train_val, y_train_val)
     y_pred = model.predict(x_test_val)
+    
+    y_pred = np.reshape(y_pred, (y_pred.shape[0], 1)) ## Lasso shape without reshape by default: (y_pred.shape[0], ) and we want (y_pred.shape[0], 1).
     
     if mode == 'm':
         mse = MSE(y_test_val,y_pred)
@@ -91,26 +93,43 @@ print("------- Training Set Scores -------")
 print('Sum of Squared Error (SSE):', scores(y_train,y_train_pred,'s'))
 print('Mean Squared Error (MSE):', scores(y_train,y_train_pred,'m')) 
 print('Root Mean Square Error (RMSE)', np.sqrt(scores(y_train,y_train_pred,'m')))
-print('R-Squared (R^2):', scores(y_train, y_train_pred, 'r2')) 
+print('R-Squared (R2):', scores(y_train, y_train_pred, 'r2')) 
 print("Mean Absolute Error (MAE):",mean_absolute_error(y_train, y_train_pred))
 
 ## Validation Phase
 print("------- Validation Set Scores -------")
 ## KFold validation method for any type of regression 
-n_splits=4
+n_splits=5
 kf = KFold(n_splits, shuffle = False)
-val_scores = []
+Ridge_val_scores = []
+LinearR_val_scores = []
+Lasso_val_scores = []
+scores_list = []
 
 for train_index, test_index in kf.split(x_train):
     x_train_val, x_test_val = x_train[train_index], x_train[test_index]
     y_train_val, y_test_val = y_train[train_index], y_train[test_index]
-    val_scores.append(model_val_scores(Ridge(alpha=0.06), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
-print("SSE Score using K Folds Validation with",n_splits,"splits:", val_scores)
+    Ridge_val_scores.append(model_val_scores(Ridge(alpha = 0.06), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+    LinearR_val_scores.append(model_val_scores(LinearRegression(), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+    Lasso_val_scores.append(model_val_scores(Lasso(alpha = 0.005), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+    
+print("Score: SSE | K Folds Validation nº",n_splits,"splits | Ridge:", np.average(Ridge_val_scores),"| Linear:", np.average(LinearR_val_scores),"| Lasso:", np.average(Lasso_val_scores))
+scores_list = [np.average(Ridge_val_scores), np.average(LinearR_val_scores), np.average(Lasso_val_scores)]
+minSSE = min(scores_list)
+if minSSE == scores_list[0]:
+    print("-> Best is Ridge Regression:", minSSE)
+elif minSSE == scores_list[1]:
+    print("-> Best is Linear Regression:", minSSE)
+else:
+    print("-> Best is Lasso Regression:", minSSE)
+    
                
-## Choose the ideal Ridge Hyperparameter alpha according to the highest Cross Validation score
-ridge_cv = RidgeCV(alphas = [0.05,0.06,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17]).fit(x_train,y_train)
-print("Total Cross Validation Score: {}".format(ridge_cv.score(x_train, y_train)))
+## Choose the ideal Ridge Hyperparameter alpha according to the highest Cross Validation score 
+ridge_cv = RidgeCV(alphas = [0.05,0.06,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17], scoring = "neg_mean_squared_error").fit(x_train,y_train)
+print("Mean Squared Error (MSE) RidgeCV:", np.abs(ridge_cv.best_score_))
 print("Best Ridge Hyperparameter alpha:", ridge_cv.alpha_)
+print("R-Squared (R2) RidgeCV: {}".format(ridge_cv.score(x_train, y_train)))
+
 
 ## Calculate best split number with Cross Validation
 best_score = 0
@@ -123,7 +142,8 @@ for step in range(2,50):
         best_score = my_score
         min_step = step
         
-print("Cross Validation Scores with", min_step,"splits:", cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = min_step))
+cv_score =  cross_val_score(Ridge(alpha=0.06), x_train, y_train, cv = min_step)  
+print("Cross Validation Scores nº", min_step,"splits:", cv_score, "Average:", np.average(cv_score))
 
 
 
