@@ -109,14 +109,16 @@ print("------ Local Outlier Factor ------")
 x_train = normalize(x_train)
 y_train = normalize(y_train)
 
-model_LOF = LocalOutlierFactor(n_neighbors=50, contamination=0.2)
+model_LOF = LocalOutlierFactor(n_neighbors=20, contamination=0.2)
 model_LOF_outliers = model_LOF.fit_predict(x_train)
 x_train_LOF = []
 y_train_LOF = []
+outlier_index_LOF = []
 for i in range (0, len(model_LOF_outliers)):
     if model_LOF_outliers[i] == -1:
         #print("Outlier Line:", i, x_train[i])
-        print("Outlier line:", i)
+        #print("Outlier line:", i)
+        outlier_index_LOF.append(i)
     else:
         x_train_LOF.append(x_train[i])
         y_train_LOF.append(y_train[i])
@@ -131,10 +133,12 @@ model_IF = IsolationForest(contamination = 0.2,random_state=0)
 model_IF_outliers = model_IF.fit_predict(x_train)
 x_train_IF = []
 y_train_IF = []
+outlier_index_IF = []
 for i in range (0, len(model_IF_outliers)):
     if model_IF_outliers[i] == -1:
         #print("Outlier Line:", i, x_train[i])
-        print("Outlier line:", i)
+        #print("Outlier line:", i)
+        outlier_index_IF.append(i)
     else:
         x_train_IF.append(x_train[i])
         y_train_IF.append(y_train[i])
@@ -149,16 +153,30 @@ model_EE = EllipticEnvelope(contamination=0.2,random_state=0)
 model_EE_outliers = model_EE.fit_predict(x_train)
 x_train_EE = []
 y_train_EE = []
+outlier_index_EE = []
 for i in range (0, len(model_EE_outliers)):
     if model_EE_outliers[i] == -1:
         #print("Outlier Line:", i, x_train[i])
-        print("Outlier line:", i)
+        #print("Outlier line:", i)
+        outlier_index_EE.append(i)
     else:
         x_train_EE.append(x_train[i])
         y_train_EE.append(y_train[i])
 
 x_train_EE = np.array(x_train_EE)
 y_train_EE = np.array(y_train_EE)
+
+## Find common outliers
+common_outliers = {}
+all_outliers = outlier_index_LOF + outlier_index_IF + outlier_index_EE
+print(" all outliers", all_outliers)
+for line in all_outliers:
+    if line in common_outliers:
+        common_outliers[line] += 1
+    else:
+        common_outliers[line] = 1
+
+print("Common outliers:",dict(sorted(common_outliers.items(), key=lambda item: item[1], reverse=True)))
 
 
 def kfold_func(x_train,y_train):
