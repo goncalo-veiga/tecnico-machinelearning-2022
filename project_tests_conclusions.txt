@@ -1,6 +1,6 @@
 Machine Learning Project 2022/2023
 
-1º Regression Problem Tests/Conclusions:
+1º Regression Problem:
 
 - Tested Linear Regression vs Lasso Regression vs Ridge Regression
 - Tested Underfitting and Overfitting in each model
@@ -17,3 +17,10 @@ perfomance and validation. (alpha = 0.06)
 To Do:
 - Plot the data -> excel, matplotplib, seaborn
 - See the relationship between the data 
+
+-------------------- X --------------------
+
+2º Regression Problem:
+
+Outlier Detector and Removal: Local Outlier Factor, Isolation Forest, Eliptical Envelloppe, (and more)
+Robust Regression Models (to possible unremoved outliers): Huber Regression, RANSAC, Theil Sen Regressions 
