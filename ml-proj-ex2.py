@@ -21,6 +21,9 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.ensemble import IsolationForest
 from sklearn.covariance import EllipticEnvelope
+from sklearn.linear_model import HuberRegressor
+from sklearn.linear_model import RANSACRegressor
+from sklearn.linear_model import TheilSenRegressor
 
 
 ## Scores between the y real and y predicted
