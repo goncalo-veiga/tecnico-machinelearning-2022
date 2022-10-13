@@ -15,6 +15,7 @@ from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import LassoLars
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import OneClassSVM
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_absolute_error 
 from sklearn.metrics import mean_squared_error as MSE
@@ -28,6 +29,12 @@ from sklearn.linear_model import HuberRegressor
 from sklearn.linear_model import RANSACRegressor
 from sklearn.linear_model import TheilSenRegressor
 
+from pyod.models.ecod import ECOD
+from pyod.models.knn import KNN 
+from pyod.utils.data import generate_data
+from pyod.utils.data import evaluate_print
+from pyod.utils.example import visualize
+pd.set_option('display.max_rows', None)
 
 ## Scores between the y real and y predicted
 def scores(y_real,y_pred,mode):
@@ -46,7 +53,6 @@ def scores(y_real,y_pred,mode):
         sse = np.sum((y_real - y_pred)**2)
         print('The Sum of Squares Error is', sse)
         return sse
-
             
 ## Validation Scores inside the validation set             
 def model_val_scores(model, x_train_val, x_test_val, y_train_val, y_test_val, mode):
@@ -76,39 +82,27 @@ x_train = np.load('Xtrain_Regression2.npy')
 y_train = np.load('Ytrain_Regression2.npy')
 x_test = np.load('Xtest_Regression2.npy')
 
-"""Analysing the Data"""
+## Analysing the Data
 raw_data = pd.read_csv('ex2_dataset.csv')
 x_features = ['x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10']
 y = ['y']
 
-## Data distribution plot
-"""for i in x_features:
-    x_values = raw_data[i].values
-    mean = raw_data[i].mean()
-    sns.displot(x_values, color = 'red', kind = 'kde', legend = i)
-    plt.axvline(mean,0,1, color = 'black')
-    plt.xlabel(i)
-    plt.show()
-
-## Data scatter plot
-for j in x_features:
-    ax = sns.scatterplot(x = j, y = 'y', data = raw_data, color = 'green')
-    plt.show()
-
-## Data pair plot    
-pairplot = sns.pairplot(raw_data, plot_kws={'color':'green'})
-plt.show()"""
-
-
-
-""" Outlier Algorithms and Validation """
-
-## Local Outlier Factor Algorithm
-print("------ Local Outlier Factor ------")
-
+## Outlier Algorithms and Validation
 x_train = normalize(x_train)
 y_train = normalize(y_train)
-
+x_train2 = np.delete(x_train,[72,34,48,63,71,96,39,5,15,20,26,41,58,93,29,51,61,73,80,99],axis=0)
+y_train2 = np.delete(y_train,[72,34,48,63,71,96,39,5,15,20,26,41,58,93,29,51,61,73,80,99],axis=0)
+""" Boxplot outliers
+df_xtrain = pd.DataFrame(x_train,columns=['x1','x2','x3','x4','x5','x6','x7','x8','x9','x10'])
+print(df_xtrain.head())
+print(df_xtrain['x10'])
+df1 = df_xtrain.drop([31,93])
+print(df1['x10'])
+sns.boxplot(data = df1)
+plt.show()
+"""
+## Local Outlier Factor Algorithm
+print("------ Local Outlier Factor ------")
 model_LOF = LocalOutlierFactor(n_neighbors=20, contamination=0.2)
 model_LOF_outliers = model_LOF.fit_predict(x_train)
 x_train_LOF = []
@@ -178,15 +172,14 @@ for line in all_outliers:
 
 print("Common outliers:",dict(sorted(common_outliers.items(), key=lambda item: item[1], reverse=True)))
 
-
 def kfold_func(x_train,y_train):
     ## KFold validation method for any type of regression 
     n_splits = 10
-    kf = KFold(n_splits, shuffle = True)
+    kf = KFold(n_splits, shuffle = False)
     Ridge_val_scores = []
     LinearR_val_scores = []
     Lasso_val_scores = []
-    ridge_cv = RidgeCV(alphas = [2,2.1,2.2,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,3.3,3.4,3.5,3.6,4,5,6]).fit(x_train,y_train)
+    ridge_cv = RidgeCV(alphas = [0.5,1,1.5,1.7,1.8,1.82,1.83,1.84,1.85,1.86,1.87,1.88,1.89,1.9,1.95,2,2.05,2.1,2.16,2.17,2.18,2.19,2.2,2.21,2.22,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,3.3,3.4,3.5,3.6,4,5,6]).fit(x_train,y_train)
     print("alpha Ridge",ridge_cv.alpha_)
     lasso_cv = LassoCV(alphas = [1100,1200,1300,1400,1500,2000,2200,2300,2500,3000,5000,7000,10000,15000,1000000]).fit(x_train,y_train)
     print("alpha lasso",lasso_cv.alpha_)
@@ -238,31 +231,28 @@ def kfold_rob_func(x_train,y_train):
     print("idela alpha:",ideal_alpha,"SSE:")
     print("Score: SSE | K Folds Validation nº",10,"splits | Huber:", np.average(Huber_val_scores),"| Ransac:", np.average(Ransac_val_scores),"| Theilsen:", np.average(Theilsen_val_scores))
 
-
-
 print("----LOF SSE----")
 kfold_func(x_train_LOF,y_train_LOF.ravel())
 print("----IF SSE----")
 kfold_func(x_train_IF,y_train_IF.ravel())
 print("----EE SSE----")
 kfold_func(x_train_EE,y_train_EE.ravel())
-
-
-
+print("----Removed most common SSE----")
+kfold_func(x_train2,y_train2.ravel())
 
 """
-model_huber = HuberRegressor(epsilon=1.5)
+model_huber = OneClassSVM(kernel = 'sigmoid',nu=0.201)
 model_huber_fit = model_huber.fit(x_train, y_train.ravel())
 y_train_pred = model_huber.predict(x_train)
 y_test = model_huber.predict(x_test)
-print(model_huber.outliers_)
+print(y_train_pred)
 count = 0
-for i in range(0,len(model_huber.outliers_)):
-    if model_huber.outliers_[i]:
+for i in range(0,len(y_train_pred)):
+    if y_train_pred[i] == -1:
         count +=1
+        print("i:",i)
 print("counter:",count)
 
 print("----Huber SSE----")
 kfold_rob_func(normalize(x_train),normalize(y_train))
-
 """
