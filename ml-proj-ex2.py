@@ -93,11 +93,12 @@ y_train2 = np.delete(y_train,[72,34,48,63,71,96,39,5,15,20,26,41,58,93,29,51,61,
 def normalization(data):  
     
     feat_mean = np.mean(data,axis=0)
+    feat_std = np.std(data, axis = 0)
     n=0
     for row in data:
         i=0
         for value in row:
-            data[n][i] = value - feat_mean[i]
+            data[n][i] = (value - feat_mean[i])/feat_std[i]
             i += 1
         n += 1    
         
