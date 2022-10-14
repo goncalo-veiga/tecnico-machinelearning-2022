@@ -1,4 +1,3 @@
-
 from sklearn.preprocessing import normalize
 import numpy as np
 import pandas as pd
@@ -12,6 +11,14 @@ from sklearn.linear_model import RidgeCV
 from sklearn.linear_model import LassoCV
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import LassoLars
+from sklearn.linear_model import LassoLarsCV
+from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import OrthogonalMatchingPursuit
+from sklearn.linear_model import OrthogonalMatchingPursuitCV
+from sklearn.linear_model import ARDRegression
+from sklearn.linear_model import PoissonRegressor
+from sklearn.linear_model import GammaRegressor
+from sklearn.linear_model import ElasticNetCV
 from sklearn.linear_model import SGDRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
@@ -95,6 +102,7 @@ def normalization(data):
         n += 1    
         
 normalization(x_train)
+
 """ Boxplot outliers
 df_xtrain = pd.DataFrame(x_train,columns=['x1','x2','x3','x4','x5','x6','x7','x8','x9','x10'])
 print(df_xtrain.head())
@@ -104,6 +112,7 @@ print(df1['x10'])
 sns.boxplot(data = df1)
 plt.show()
 """
+
 ## Outlier Detection Algorithms
 
 ## Local Outlier Factor Algorithm 
@@ -188,27 +197,58 @@ def kfold_func(x_train,y_train):
     Ridge_val_scores = []
     LinearR_val_scores = []
     Lasso_val_scores = []
-    ridge_cv = RidgeCV(alphas = [0.5,1,1.5,1.7,1.8,1.82,1.83,1.84,1.85,1.86,1.87,1.88,1.89,1.9,1.95,2,2.05,2.1,2.16,2.17,2.18,2.19,2.2,2.21,2.22,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,3.3,3.4,3.5,3.6,4,5,6]).fit(x_train,y_train)
-    print("alpha Ridge:",ridge_cv.alpha_)
+    ElasticNet_val_scores = []
+    LassoLars_val_scores = []
+    OMP_val_scores = []
+    BayesianRidge_val_scores = []
+    ARD_val_scores = []
+    ridge_cv = RidgeCV(alphas = [0.5,1,1.5,1.7,1.8,1.82,1.83,1.84,1.85,1.86,1.87,1.88,1.89,1.9,1.95,2,2.05,2.1,2.16,2.17,2.18,2.19,2.2,2.21,2.22,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,3.3,3.4,
+    3.5,3.6,4,5,6]).fit(x_train,y_train)
+    print("alpha Ridge",ridge_cv.alpha_)
     lasso_cv = LassoCV(alphas = [1100,1200,1300,1400,1500,2000,2200,2300,2500,3000,5000,7000,10000,15000,1000000]).fit(x_train,y_train)
-    print("alpha Lasso:",lasso_cv.alpha_)
+    print("alpha lasso",lasso_cv.alpha_)
+    ElasticNet_cv = ElasticNetCV(alphas = [0.5,1,1.5,1.7,1.8,1.82,1.83,1.84,1.85,1.86,1.87,1.88,1.89,1.9,1.95,2,2.05,2.1,2.16,2.17,2.18,2.19,2.2,2.21,2.22,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,
+    3.3,3.4,3.5,3.6,4,5,6,10,15,20,25,30,50,100,700]).fit(x_train,y_train)
+    print("alpha ElasticNet",ElasticNet_cv.alpha_)
+    LassoLars_cv = LassoLarsCV(cv = 10).fit(x_train,y_train)
+    print("alpha LassoLars",LassoLars_cv.alpha_)
+ 
     
     for train_index, test_index in kf.split(x_train):
         x_train_val, x_test_val = x_train[train_index], x_train[test_index]
         y_train_val, y_test_val = y_train[train_index], y_train[test_index]
-        Ridge_val_scores.append(model_val_scores(Ridge(alpha = ridge_cv.alpha_), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        Ridge_val_scores.append(model_val_scores(Ridge(alpha = ridge_cv.alpha_,random_state=0), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
         LinearR_val_scores.append(model_val_scores(LinearRegression(), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
-        Lasso_val_scores.append(model_val_scores(Lasso(alpha=lasso_cv.alpha_), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        Lasso_val_scores.append(model_val_scores(Lasso(alpha=lasso_cv.alpha_,random_state=0), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        ElasticNet_val_scores.append(model_val_scores(ElasticNet(alpha=ElasticNet_cv.alpha_,random_state=0), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        LassoLars_val_scores.append(model_val_scores(LassoLars(alpha=ElasticNet_cv.alpha_,random_state=0), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        OMP_val_scores.append(model_val_scores(OrthogonalMatchingPursuit(normalize = False), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        BayesianRidge_val_scores.append(model_val_scores(BayesianRidge(), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
+        ARD_val_scores.append(model_val_scores(ARDRegression(alpha_1= 10, alpha_2 = 10), x_train_val, x_test_val, y_train_val, y_test_val, 's'))
 
-    print("Score: SSE | K Folds Validation nº",n_splits,"splits | Ridge:", np.average(Ridge_val_scores),"| Linear:", np.average(LinearR_val_scores),"| Lasso:", np.average(Lasso_val_scores))
-    scores_list = [np.average(Ridge_val_scores), np.average(LinearR_val_scores), np.average(Lasso_val_scores)]
+
+    scores_list = [np.average(Ridge_val_scores), np.average(LinearR_val_scores), np.average(Lasso_val_scores),np.average(ElasticNet_val_scores),np.average(LassoLars_val_scores),np.average(OMP_val_scores),np.average(BayesianRidge_val_scores),np.average(ARD_val_scores)]
+    print("Score: SSE | K Folds Validation nº",n_splits,"splits | Ridge:", scores_list[0],"| Linear:", scores_list[1],"| Lasso:", scores_list[2],"| ElasticNet:", scores_list[3]
+    ,"| LassoLars:", scores_list[4],"| OMP:", scores_list[5],"| BayesianRidge:", scores_list[6],"| ARD:", scores_list[7])
+    
     minSSE = min(scores_list)
     if minSSE == scores_list[0]:
         print("-> Best is Ridge Regression:", minSSE)
     elif minSSE == scores_list[1]:
         print("-> Best is Linear Regression:", minSSE)
-    else:
+    elif minSSE == scores_list[2]:
         print("-> Best is Lasso Regression:", minSSE)
+    elif minSSE == scores_list[3]:
+        print("-> Best is ElasticNet Regression:", minSSE)
+    elif minSSE == scores_list[4]:
+        print("-> Best is LassoLars Regression:", minSSE)
+    elif minSSE == scores_list[5]:
+        print("-> Best is OMP Regression:", minSSE)
+    elif minSSE == scores_list[6]:
+        print("-> Best is BayesianRidge Regression:", minSSE)
+    elif minSSE == scores_list[7]:
+        print("-> Best is ARD Regression:", minSSE)
+
         
 print("----- Local Outlier Factor SSE-----")
 kfold_func(x_train_LOF,y_train_LOF.ravel())
@@ -267,4 +307,3 @@ print("counter:",count)
 print("----Huber SSE----")
 kfold_rob_func(normalize(x_train),normalize(y_train))
 """
-
