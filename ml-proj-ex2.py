@@ -1,4 +1,3 @@
-
 from sklearn.preprocessing import normalize
 import numpy as np
 import pandas as pd
@@ -90,7 +89,6 @@ y_train = normalize(y_train)
 x_train2 = np.delete(x_train,[72,34,48,63,71,96,39,5,15,20,26,41,58,93,29,51,61,73,80,99],axis=0)
 y_train2 = np.delete(y_train,[72,34,48,63,71,96,39,5,15,20,26,41,58,93,29,51,61,73,80,99],axis=0)
 
-<<<<<<< Updated upstream
 #print(x_train)
 def normalization(data):  
     
@@ -104,8 +102,7 @@ def normalization(data):
         n += 1    
         
 normalization(x_train)
-=======
->>>>>>> Stashed changes
+
 """ Boxplot outliers
 df_xtrain = pd.DataFrame(x_train,columns=['x1','x2','x3','x4','x5','x6','x7','x8','x9','x10'])
 print(df_xtrain.head())
@@ -115,16 +112,11 @@ print(df1['x10'])
 sns.boxplot(data = df1)
 plt.show()
 """
-<<<<<<< Updated upstream
+
 ## Outlier Detection Algorithms
 
 ## Local Outlier Factor Algorithm 
 
-=======
-
-## Local Outlier Factor Algorithm
-print("------ Local Outlier Factor ------")
->>>>>>> Stashed changes
 model_LOF = LocalOutlierFactor(n_neighbors=20, contamination=0.2)
 model_LOF_outliers = model_LOF.fit_predict(x_train)
 x_train_LOF = []
@@ -205,12 +197,6 @@ def kfold_func(x_train,y_train):
     Ridge_val_scores = []
     LinearR_val_scores = []
     Lasso_val_scores = []
-<<<<<<< Updated upstream
-    ridge_cv = RidgeCV(alphas = [0.5,1,1.5,1.7,1.8,1.82,1.83,1.84,1.85,1.86,1.87,1.88,1.89,1.9,1.95,2,2.05,2.1,2.16,2.17,2.18,2.19,2.2,2.21,2.22,2.23,2.25,2.27,2.3,2.4,2.5,2.6,3,3.2,3.3,3.4,3.5,3.6,4,5,6]).fit(x_train,y_train)
-    print("alpha Ridge:",ridge_cv.alpha_)
-    lasso_cv = LassoCV(alphas = [1100,1200,1300,1400,1500,2000,2200,2300,2500,3000,5000,7000,10000,15000,1000000]).fit(x_train,y_train)
-    print("alpha Lasso:",lasso_cv.alpha_)
-=======
     ElasticNet_val_scores = []
     LassoLars_val_scores = []
     OMP_val_scores = []
@@ -226,10 +212,7 @@ def kfold_func(x_train,y_train):
     print("alpha ElasticNet",ElasticNet_cv.alpha_)
     LassoLars_cv = LassoLarsCV(cv = 10).fit(x_train,y_train)
     print("alpha LassoLars",LassoLars_cv.alpha_)
-    
-    
-    
->>>>>>> Stashed changes
+ 
     
     for train_index, test_index in kf.split(x_train):
         x_train_val, x_test_val = x_train[train_index], x_train[test_index]
@@ -255,17 +238,6 @@ def kfold_func(x_train,y_train):
         print("-> Best is Linear Regression:", minSSE)
     elif minSSE == scores_list[2]:
         print("-> Best is Lasso Regression:", minSSE)
-<<<<<<< Updated upstream
-        
-print("----- Local Outlier Factor SSE-----")
-kfold_func(x_train_LOF,y_train_LOF.ravel())
-print("----- Isolation Forest SSE-----")
-kfold_func(x_train_IF,y_train_IF.ravel())
-print("----- Eliptical Envellope SSE-----")
-kfold_func(x_train_EE,y_train_EE.ravel())
-print("----- Removed most common outliers SSE -----")
-kfold_func(x_train2,y_train2.ravel())
-=======
     elif minSSE == scores_list[3]:
         print("-> Best is ElasticNet Regression:", minSSE)
     elif minSSE == scores_list[4]:
@@ -276,7 +248,16 @@ kfold_func(x_train2,y_train2.ravel())
         print("-> Best is BayesianRidge Regression:", minSSE)
     elif minSSE == scores_list[7]:
         print("-> Best is ARD Regression:", minSSE)
->>>>>>> Stashed changes
+
+        
+print("----- Local Outlier Factor SSE-----")
+kfold_func(x_train_LOF,y_train_LOF.ravel())
+print("----- Isolation Forest SSE-----")
+kfold_func(x_train_IF,y_train_IF.ravel())
+print("----- Eliptical Envellope SSE-----")
+kfold_func(x_train_EE,y_train_EE.ravel())
+print("----- Removed most common outliers SSE -----")
+kfold_func(x_train2,y_train2.ravel())
 
 
 ## This functions returns the scores for Robust Regressors such as Huber, RANSAC and Thei-sen
@@ -326,4 +307,3 @@ print("counter:",count)
 print("----Huber SSE----")
 kfold_rob_func(normalize(x_train),normalize(y_train))
 """
-
