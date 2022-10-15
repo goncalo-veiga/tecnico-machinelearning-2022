@@ -1,3 +1,8 @@
+"""
+Authors: 
+96738 - Gonçalo Veiga 
+96216 - Gonçalo Galante
+"""
 from sklearn.preprocessing import normalize
 import numpy as np
 import pandas as pd
