@@ -126,7 +126,7 @@ y_train_IF2 = np.array(y_train_IF2)
 print("> Isolation Forest: Outliers detected and removed.", outlier_index_IF2)
 
 ## Local Outlier Factor Algorithm (IQR outliers removed) 
-model_LOF = LocalOutlierFactor(n_neighbors=20, contamination=0.13)
+model_LOF = LocalOutlierFactor(n_neighbors=20, contamination=0.14)
 model_LOF_outliers = model_LOF.fit_predict(x_train2)
 x_train_LOF,y_train_LOF,outlier_index_LOF = [],[],[]
 ## Remove outliers: LOF
@@ -141,7 +141,7 @@ y_train_LOF = np.array(y_train_LOF)
 print("> Local Outlier Factor: Outliers detected and removed.", outlier_index_LOF)
 
 ## Eliptical Envellope Algorithm (IQR outliers removed) 
-model_EE = EllipticEnvelope(contamination=0.13,random_state=0)
+model_EE = EllipticEnvelope(contamination=0.14,random_state=0)
 model_EE_outliers = model_EE.fit_predict(x_train2)
 x_train_EE,y_train_EE,outlier_index_EE = [],[],[]
 ## Remove outliers
@@ -157,7 +157,7 @@ y_train_EE = np.array(y_train_EE)
 print("> Eliptical Envellope: Outliers detected and removed.", outlier_index_EE)
 
 ## Isolation Forest (IQR outliers removed) 
-model_IF = IsolationForest(contamination = 0.13,random_state=0)
+model_IF = IsolationForest(contamination = 0.14,random_state=0)
 model_IF_outliers = model_IF.fit_predict(x_train2)
 x_train_IF,y_train_IF,outlier_index_IF = [],[],[]
 ## Remove outliers: IF
@@ -257,7 +257,6 @@ kfold_func(x_train2,y_train2.ravel(),80)
 ## Gives the best result
 print("----- Pre-removed IQR outliers and Isolation Forest SSE-----")
 kfold_func(x_train_IF,y_train_IF.ravel(),80)
-
 
 ## Define model and fit the training data on it 
 our_model = Lasso(alpha=0.31036887748972686,random_state=0)
