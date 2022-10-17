@@ -1,22 +1,19 @@
 
-import os
 import sys
 import numpy as np
 import pandas as pd
-import warnings
-from PIL import Image
-import tensorflow as tf
-import numpy as np
-from tensorflow import keras
-from keras import optimizers
 import matplotlib.pyplot as plt
+import warnings
+import tensorflow as tf
+from tensorflow import keras
+import keras.backend as K
+import cv2
+from keras import optimizers
 from keras import layers
 from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
-import matplotlib.pyplot as plt
-import cv2
-import keras.backend as K
+from PIL import Image
 
 np.set_printoptions(threshold=sys.maxsize)
 pd.set_option('display.max_rows', None)
