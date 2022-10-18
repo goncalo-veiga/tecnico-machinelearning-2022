@@ -14,10 +14,16 @@ from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
 from PIL import Image
+from keras.applications.vgg19 import VGG19
+from keras.applications.resnet import ResNet50
+from tensorflow import keras
+from keras import optimizers
+from keras.optimizers import schedules
 
 np.set_printoptions(threshold=sys.maxsize)
 pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
+
 
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
@@ -46,7 +52,6 @@ print(y_train.shape)
 print(x_train.shape)
 
 ## Dataset processing (array to image) and saves the images
-
 x_train_new = []
 count_eyespot = 0
 count_spot = 0
@@ -71,33 +76,44 @@ print("Nº of Eyespots", count_eyespot)
 print("Nº of Spots:", count_spot)
     
 x_train_new = np.array(x_train_new)
-print(x_train_new.shape)
-#print(x_train_new)
 
+## Solving Imbalanced Dataset (eyespots: 3131 | spot: 5142)
+
+# - 1º Approach: Undesampling - eyespots: 3131 | spot: 3131
+
+
+# - 2º Approach: Oversampling - eyespots: 5142 (3131 + 2011) | spot: 5142
+
+
+# - 3º Approach: Data Augmentation - eyespots: ~~ 6500 | spot: ~~ 6500     
+
+     
 ## Normalization
 x_train_new = x_train_new/255
 
-## Model CNN
-model = models.Sequential()
 
+## Model CNN 
+
+model = models.Sequential()
 # 1º layer convolutional
-model.add(layers.Conv2D(32, (5, 5), activation='relu', input_shape=(30, 30, 3)))
+model.add(layers.Conv2D(64, (5, 5), activation='relu', input_shape=(30, 30, 3)))
 # add a pooling layer
 model.add(layers.MaxPooling2D(pool_size=(2, 2)))
 # 2º layer convolutional
-model.add(layers.Conv2D(32, (5, 5), activation='relu'))
+model.add(layers.Conv2D(64, (5, 5), activation='relu'))
 # add another pooling layer
 model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+
 # Flattening layer
 model.add(layers.Flatten())
 
 # add a layer with 500 neurons
 model.add(layers.Dense(500, activation='relu'))
-# add a drop out layer
+# drop out layer
 model.add(layers.Dropout(0.5))
 # add another layer with 250 neurons
 model.add(layers.Dense(250, activation='relu'))
-# add a drop out layer
+# drop out layer
 model.add(layers.Dropout(0.5))
 # add another layer with 125 neurons
 model.add(layers.Dense(125, activation='relu'))
@@ -112,9 +128,28 @@ model.add(layers.Dense(1, activation='sigmoid'))
 
 model.summary()
 
-## compile the model
-model.compile(loss = 'BinaryCrossentropy', optimizer='adam', metrics=['acc',f1_score])
+model.compile(optimizer = 'adam', loss = 'binary_crossentropy',metrics = ['acc', f1_score])
+hist = model.fit(x_train_new, y_train, batch_size=376, epochs=10, validation_split=0.2)
 
-## Train the model
-print(model)
-hist = model.fit(x_train_new, y_train, batch_size=70, epochs=20, validation_split=0.15)
+acc = hist.history['acc']
+val_acc = hist.history['val_acc']
+loss = hist.history['loss']
+val_loss = hist.history['val_loss']
+## Note: EArly STOPING PREVENT OVERFITTING, callback
+epochs = range(1, len(acc) + 1)
+
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'r', label='Validation acc')
+plt.title('Training and Validation accuracy')
+plt.legend()
+
+plt.figure()
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'r', label='Validation loss')
+plt.title('Training and Validation loss')
+plt.legend()
+
+plt.show()  
+
+## convert y into one hot enconding
