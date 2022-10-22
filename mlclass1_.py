@@ -91,6 +91,8 @@ x_train_new = np.array(x_train_new)
 ## Normalization
 x_train_new = x_train_new/255
 
+## Callback function to advise when there is no improvement for accuracy
+callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=2, verbose=1)
 
 ## Model CNN 
 
@@ -129,7 +131,7 @@ model.add(layers.Dense(1, activation='sigmoid'))
 model.summary()
 
 model.compile(optimizer = 'adam', loss = 'binary_crossentropy',metrics = ['acc', f1_score])
-hist = model.fit(x_train_new, y_train, batch_size=376, epochs=10, validation_split=0.2)
+hist = model.fit(x_train_new, y_train, batch_size=376, epochs=10, validation_split=0.2, callbacks = callback)
 
 acc = hist.history['acc']
 val_acc = hist.history['val_acc']
