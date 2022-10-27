@@ -1,7 +1,5 @@
 
-from audioop import avg
 import sys
-from tabnanny import verbose
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -10,45 +8,47 @@ import tensorflow as tf
 from tensorflow import keras
 import keras.backend as K
 import cv2
+import os
 from keras import optimizers
 from keras import layers
 from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
-from PIL import Image
+from keras.regularizers import L1 as l1, L2 as l2
+from keras.preprocessing import image
+from keras.utils import to_categorical
 from keras.applications.vgg19 import VGG19
 from keras.applications.resnet import ResNet50
-from tensorflow import keras
 from keras import optimizers
 from keras.optimizers import schedules
-import os
 from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import plot_confusion_matrix
 from imblearn.over_sampling import SMOTE, RandomOverSampler
+from PIL import Image
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
-import tensorflow as tf
-
-np.set_printoptions(threshold=sys.maxsize)
+#np.set_printoptions(threshold=sys.maxsize)
 #pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
 
-#config = tf.ConfigProto(
-##        device_count = {'GPU': 0}
-#    )
-#sess = tf.Session(config=config)
 
-
+## This function returns the recall for F1 Score
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     recall = true_positives / (possible_positives + K.epsilon())
     return recall
 
+## This function returns the precision for F1 Score
 def precision_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
     precision = true_positives / (predicted_positives + K.epsilon())
     return precision
 
+## This function returns the F1 Score for the classification
 def f1_score(y_true, y_pred):
     precision = precision_m(y_true, y_pred)
     recall = recall_m(y_true, y_pred)
@@ -70,7 +70,7 @@ x_test_new = []
 count_eyespot_train = 0
 count_spot_train = 0
 
-## TRAINING SET
+## Training dataset to (30,30,3) shape
 for i in range(0, len(x_train)):
     x_train_new.append(x_train[i].reshape(30,30,3))
     #img  = Image.fromarray(x_train_new[i])
@@ -86,7 +86,7 @@ for i in range(0, len(x_train)):
         #img.save("spots/%d.png"%(i))
         count_spot_train += 1
         
-## TEST SET
+## Test dataset to (30,30,3) shape
 for i in range(0, len(x_test)):
     x_test_new.append(x_test[i].reshape(30,30,3))
     #img  = Image.fromarray(x_test_new[i])
@@ -101,13 +101,10 @@ print(x_train_new.shape)
 
 x_test_new = np.array(x_test_new)
 print(x_test_new.shape)
+
+
 ## Solving Imbalanced Dataset (eyespots: 3131 | spot: 5142)
-
-# - 1º Approach: Undesampling - eyespots: 3131 | spot: 3131
-
-
-# - 2º Approach: Oversampling - eyespots: 5142 (3131 + 2011) | spot: 5142
-
+# - 1º Approach: Oversampling - eyespots: 5142 (3131 + 2011) | spot: 5142
 df_y_train = pd.DataFrame({'y_train': y_train.tolist()})
 df_x_train = pd.DataFrame({'x_train': x_train_new.tolist()})
 print(df_y_train.value_counts())
@@ -131,95 +128,63 @@ for i in range(0, len(x_oversampling)):
         img  = Image.fromarray(x_oversampling_new[i])
         img.save("oversampling/spots/%d.png"%(i))
         count_spot_train += 1
- 
-#x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state = 0) 
-print("gravacao done")  
-print("Y OVER", y_oversampling)
+
 x_oversampling_new = np.array(x_oversampling_new)
 print(x_oversampling_new.shape)
-
 x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling)
 
-# - 3º Approach: Data Augmentation - eyespots: ~~ 6500 | spot: ~~ 6500     
+# - 3º Approach: Data Augmentation - eyespots: ~~ same | spot: ~~ same
 
-## Normalization and shuffling
+
+# - 4º Approach: Class weight adjustement
+    # Eyepots -> 1 -> 3131 -> Class weight : 1.66
+    # Spots -> 0 -> 5142 -> Class weight : 1
+    # Results: Not worth
+
+## Data Normalization 
 x_train_new = x_train_new/255
-
 x_oversampling_new = x_oversampling_new/255
+x_test = x_test/255
 
-##  Convolutional Neural Network Model
-callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=8, verbose=1)
-# This callback will stop the training when there is no improvement in
-# the loss for 2 consecutive epochs.
-
-print("VETOR DO Y", y_oversampling)
-
-model = models.Sequential()
-
-## FIRST CNN
-"""# 1º layer convolutional
-model.add(layers.Conv2D(64, (5, 5), activation='relu', input_shape=(30, 30, 3)))
-# add a pooling layer
-model.add(layers.MaxPooling2D(pool_size=(2, 2)))
-# 2º layer convolutional
-model.add(layers.Conv2D(64, (5, 5), activation='relu'))
-# add another pooling layer
-model.add(layers.MaxPooling2D(pool_size=(2, 2)))
-
-# Flattening layer
-model.add(layers.Flatten()) 
-
-# add a layer with 500 neurons))
-model.add(layers.Dense(500, activation='relu'))
-# drop out layer
-model.add(layers.Dropout(0.5))
-# add another layer with 250 neurons
-model.add(layers.Dense(250, activation='relu'))
-# drop out layer
-model.add(layers.Dropout(0.5))
-# add another layer with 125 neurons
-model.add(layers.Dense(125, activation='relu'))
-# drop out layer
-model.add(layers.Dropout(0.6))
-# add another layer with 75 neurons
-model.add(layers.Dense(75, activation='relu'))
-# add the last layer with 1 neurons
-model.add(layers.Dense(1, activation='sigmoid'))"""
-## ----------------------------------------------------------------
-
-## SECOND CNN
-model.add(layers.Conv2D(32, (5,5), padding = 'same', activation = 'relu', input_shape=(30,30,3)))
-model.add(layers.MaxPooling2D())
-model.add(layers.Dropout(0.2))
-model.add(layers.Conv2D(64, (5,5), padding = 'same', activation = 'relu'))
-model.add(layers.MaxPooling2D())
-model.add(layers.Dropout(0.2))
-model.add(layers.Flatten())
-model.add(layers.Dense(128, activation='relu'))
-model.add(layers.Dropout(0.4))
-model.add(layers.Dense(1, activation = 'sigmoid'))
+## Split into Training and Validation from scratch
+train_X,valid_X,train_label,valid_label = train_test_split(x_oversampling_new, y_oversampling, test_size=0.165, random_state=50)
+#train_X,valid_X,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165, random_state=14)
+print("Training shape x  e  y:",train_X.shape, train_label.shape) 
+print("Validation shape x e y :",valid_X.shape, valid_label.shape)
 
 
-## Third CNN
-"""model.add(layers.Conv2D(64, (6,6), padding = 'same', activation = 'relu', input_shape=(30,30,3)))
-model.add(layers.Conv2D(64, (6,6), padding = 'same', activation = 'relu'))
-model.add(layers.MaxPooling2D(padding = 'same'))
-model.add(layers.Conv2D(64, (3,3), padding = 'same', activation = 'relu'))
-model.add(layers.Conv2D(64, (3,3), padding = 'same', activation = 'relu'))
-model.add(layers.MaxPooling2D(padding = 'same'))
-#model.add(layers.Conv2D(128, (5,5), padding = 'same', activation = 'relu'))
-#model.add(layers.MaxPooling2D(padding = 'same'))
-model.add(layers.Flatten())
-model.add(layers.Dense(1254, activation='relu'))
-model.add(layers.Dense(512, activation='relu'))
-model.add(layers.Dense(1, activation = 'sigmoid'))"""
+##  Model: Convolutional Neural Network
+#callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=200, verbose=1)
+model = models.Sequential([
+    layers.Conv2D(32, (5,5), padding = 'same', activation = 'relu', input_shape=(30,30,3)),
+    layers.MaxPooling2D(),
+    layers.Dropout(0.25),
+    layers.Conv2D(16, (5,5), padding = 'same', activation = 'relu'),
+    layers.MaxPooling2D(),
+    layers.Dropout(0.25),
+    layers.Flatten(),
+    layers.Dense(128, activation = "relu"),
+    layers.Dropout(0.4),
+    layers.Dense(1, activation = 'sigmoid'),
+])
 
-model.summary()
+## Compile the model 
+model.compile(optimizer = 'adam' , loss = 'binary_crossentropy',metrics = ['acc'])
 
+## Fit the training data into the model
+hist = model.fit(train_X, train_label, batch_size=64, epochs=25)
+#hist = model.fit(x_oversampling_new, y_oversampling, batch_size=64, epochs=25, validation_split=0.165)
 
-model.compile(optimizer = optimizers.Adam() , loss = 'binary_crossentropy',metrics = ['acc'])
-hist = model.fit(x_oversampling_new, y_oversampling, batch_size=64, epochs=25, validation_split=0.16, callbacks = [callback])
+## Predict for validation data
+valid_pred = model.predict(valid_X)
 
+## Evaluating the classification
+target_names = ['spots 0', 'eyespots 1']
+print(classification_report(valid_label, np.round(abs(valid_pred)), target_names = target_names))
+print(confusion_matrix(valid_label, np.round(abs(valid_pred))))
+
+## Plots with loss and accuracy (training and validatino)
+"""
 acc = hist.history['acc']
 val_acc = hist.history['val_acc']
 loss = hist.history['loss']
@@ -242,7 +207,17 @@ plt.plot(epochs, val_loss, 'r', label='Validation loss')
 plt.title('Training and Validation loss')
 plt.legend()
 
-plt.show()  
+plt.show() 
+
+## Predictions
+#predictions = model.predict(x_test_new)
+#predictions_tc = to_categorical(predictions, num_classes = 2)
+#for i in range(0,50):
+#    print("predictions pura", predictions[i], i)
+    #print("predictions", predictions_tc[i], i+1)
+
+
+#plot_confusion_matrix(model, test_data, test_labels)
 
 ## Training and Validation Accuracy
 #plt.plot(epochs, f1_acc, 'bo', label='F1 score Training acc')
@@ -252,4 +227,4 @@ plt.show()
 
 #plt.show()
 
-## convert y into one hot enconding 
+## convert y into one hot enconding"""
