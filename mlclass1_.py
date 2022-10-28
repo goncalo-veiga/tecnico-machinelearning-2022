@@ -8,47 +8,45 @@ import tensorflow as tf
 from tensorflow import keras
 import keras.backend as K
 import cv2
-import os
 from keras import optimizers
 from keras import layers
 from keras import models
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
-from keras.regularizers import L1 as l1, L2 as l2
-from keras.preprocessing import image
-from keras.utils import to_categorical
+from keras.utils import array_to_img
+from PIL import Image
 from keras.applications.vgg19 import VGG19
 from keras.applications.resnet import ResNet50
 from keras import optimizers
 from keras.optimizers import schedules
+import os
 from sklearn.utils import shuffle
+from imblearn.over_sampling import SMOTE, RandomOverSampler
+from keras.regularizers import L1 as l1, L2 as l2
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+import tensorflow as tf
+from keras.preprocessing import image
+from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import plot_confusion_matrix
-from imblearn.over_sampling import SMOTE, RandomOverSampler
-from PIL import Image
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 #np.set_printoptions(threshold=sys.maxsize)
 #pd.set_option('display.max_rows', None)
 warnings.filterwarnings('ignore')
 
 
-## This function returns the recall for F1 Score
+## Function to define F1 Score
 def recall_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
-    return recall
+    return true_positives / (possible_positives + K.epsilon())
 
-## This function returns the precision for F1 Score
 def precision_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
-    return precision
+    return true_positives / (predicted_positives + K.epsilon())
 
-## This function returns the F1 Score for the classification
 def f1_score(y_true, y_pred):
     precision = precision_m(y_true, y_pred)
     recall = recall_m(y_true, y_pred)
@@ -61,17 +59,16 @@ x_test = np.load('Xtest_Classification1.npy')
 
 ## Evaluate shape
 print(y_train.shape)
-print(x_train.shape)
-print(x_test.shape)
+#print(x_train.shape)
+#print(x_test.shape)
 
 ## Dataset processing (array to image) and saves the images
 x_train_new = []
-x_test_new = []
 count_eyespot_train = 0
 count_spot_train = 0
 
 ## Training dataset to (30,30,3) shape
-for i in range(0, len(x_train)):
+for i in range(len(x_train)):
     x_train_new.append(x_train[i].reshape(30,30,3))
     #img  = Image.fromarray(x_train_new[i])
     #img.save("images/%d.png"%(i))
@@ -85,38 +82,34 @@ for i in range(0, len(x_train)):
         #img  = Image.fromarray(x_train_new[i])
         #img.save("spots/%d.png"%(i))
         count_spot_train += 1
-        
-## Test dataset to (30,30,3) shape
-for i in range(0, len(x_test)):
-    x_test_new.append(x_test[i].reshape(30,30,3))
-    #img  = Image.fromarray(x_test_new[i])
-    #img.save("testset/%d.png"%(i))
-        
-print("The Images are saved successfully")         
-print("TRAIN SET | Nº of Eyespots", count_eyespot_train)
-print("TRAIN SET |Nº of Spots:", count_spot_train)       
+
+x_test_new = [x_test[i].reshape(30,30,3) for i in range(len(x_test))]
+#print("The Images are saved successfully")
+#print("TRAIN SET | Nº of Eyespots", count_eyespot_train)
+#print("TRAIN SET |Nº of Spots:", count_spot_train)       
 
 x_train_new = np.array(x_train_new)
-print(x_train_new.shape)
+#print(x_train_new.shape)
 
 x_test_new = np.array(x_test_new)
-print(x_test_new.shape)
+#print(x_test_new.shape)
 
 
 ## Solving Imbalanced Dataset (eyespots: 3131 | spot: 5142)
+
 # - 1º Approach: Oversampling - eyespots: 5142 (3131 + 2011) | spot: 5142
 df_y_train = pd.DataFrame({'y_train': y_train.tolist()})
 df_x_train = pd.DataFrame({'x_train': x_train_new.tolist()})
-print(df_y_train.value_counts())
+print("Normal Dataset", df_y_train.value_counts())
 
 smote = RandomOverSampler(sampling_strategy='minority')
 x_oversampling, y_oversampling = smote.fit_resample(x_train, df_y_train)
 
-print("Nº DE SPOTS E EYESPOTS:", y_oversampling.value_counts())
+print("Data Oversampling", y_oversampling.value_counts())
 y_oversampling = np.array(y_oversampling)
 
 x_oversampling_new = []
-for i in range(0, len(x_oversampling)):
+for i in range(len(x_oversampling)):
     x_oversampling_new.append(x_oversampling[i].reshape(30,30,3))
     if y_oversampling[i] == 1:
         #print("EYESPOTS indices:", i)
@@ -130,16 +123,24 @@ for i in range(0, len(x_oversampling)):
         count_spot_train += 1
 
 x_oversampling_new = np.array(x_oversampling_new)
-print(x_oversampling_new.shape)
+#print(x_oversampling_new.shape)
 x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling)
 
-# - 3º Approach: Data Augmentation - eyespots: ~~ same | spot: ~~ same
+# - 2º Approach: Data Augmentation
 
 
-# - 4º Approach: Class weight adjustement
-    # Eyepots -> 1 -> 3131 -> Class weight : 1.66
-    # Spots -> 0 -> 5142 -> Class weight : 1
-    # Results: Not worth
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Data Normalization 
 x_train_new = x_train_new/255
@@ -147,13 +148,13 @@ x_oversampling_new = x_oversampling_new/255
 x_test = x_test/255
 
 ## Split into Training and Validation from scratch
-train_X,valid_X,train_label,valid_label = train_test_split(x_oversampling_new, y_oversampling, test_size=0.165, random_state=50)
+train_X,valid_X,train_label,valid_label = train_test_split(x_oversampling_new, y_oversampling, test_size=0.165)
 #train_X,valid_X,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165, random_state=14)
-print("Training shape x  e  y:",train_X.shape, train_label.shape) 
-print("Validation shape x e y :",valid_X.shape, valid_label.shape)
+print("TRAINING shape x  e  y:",train_X.shape, train_label.shape)
+print("VALIDATION shape x e y :",valid_X.shape, valid_label.shape)
 
 
-##  Model: Convolutional Neural Network
+##  Convolutional Neural Network Models
 #callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=200, verbose=1)
 model = models.Sequential([
     layers.Conv2D(32, (5,5), padding = 'same', activation = 'relu', input_shape=(30,30,3)),
@@ -172,7 +173,7 @@ model = models.Sequential([
 model.compile(optimizer = 'adam' , loss = 'binary_crossentropy',metrics = ['acc'])
 
 ## Fit the training data into the model
-hist = model.fit(train_X, train_label, batch_size=64, epochs=25)
+hist = model.fit(train_X, train_label, batch_size=32, epochs=25)
 #hist = model.fit(x_oversampling_new, y_oversampling, batch_size=64, epochs=25, validation_split=0.165)
 
 ## Predict for validation data
