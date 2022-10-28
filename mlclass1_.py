@@ -26,7 +26,7 @@ from keras.regularizers import L1 as l1, L2 as l2
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 import tensorflow as tf
 from keras.preprocessing import image
-from keras.utils import to_categorical
+from keras.utils import to_categorical, array_to_img, img_to_array, load_img
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
@@ -128,19 +128,38 @@ x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling)
 
 # - 2º Approach: Data Augmentation
 
+"""
+datagen = ImageDataGenerator(rotation_range=30,width_shift_range=0.2,height_shift_range=0.2,horizontal_flip=True,fill_mode="nearest")
+for n in eyespots_index[0:403]:
+    img = load_img('data/eyespots/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='preview',save_prefix='augmented',save_format='png'):
+        i += 1
+        if i > 5:
+            break
 
 
+"""
 
+y_aug = np.ones([2011,])
+for images in os.listdir("preview/"):
+    if (images.endswith(".png")):
+        img = load_img("preview/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        
+        x_train_new = np.append(x_train_new,[np_x],axis = 0)
 
+y_train = np.append(y_train,y_aug)
 
-
-
-
-
-
-
-
-
+print(x_train_new.shape)
+print(y_train.shape)
+x_train_new, y_train = shuffle(x_train_new, y_train)
 
 ## Data Normalization 
 x_train_new = x_train_new/255
@@ -148,7 +167,7 @@ x_oversampling_new = x_oversampling_new/255
 x_test = x_test/255
 
 ## Split into Training and Validation from scratch
-train_X,valid_X,train_label,valid_label = train_test_split(x_oversampling_new, y_oversampling, test_size=0.165)
+train_X,valid_X,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165)
 #train_X,valid_X,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165, random_state=14)
 print("TRAINING shape x  e  y:",train_X.shape, train_label.shape)
 print("VALIDATION shape x e y :",valid_X.shape, valid_label.shape)
