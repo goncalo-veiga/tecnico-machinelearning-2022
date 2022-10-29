@@ -69,6 +69,7 @@ x_train_new = []
 count_eyespot_train = 0
 count_spot_train = 0
 eyespots_index = []
+spots_index = []
 for i in range(len(x_train)):
     x_train_new.append(x_train[i].reshape(30,30,3))
     #img  = Image.fromarray(x_train_new[i])
@@ -79,6 +80,7 @@ for i in range(len(x_train)):
         #img.save("eyespots/%d.png"%(i))
         count_eyespot_train += 1
     else:
+        spots_index.append(i)
         #img  = Image.fromarray(x_train_new[i])
         #img.save("spots/%d.png"%(i))
         count_spot_train += 1
@@ -95,20 +97,23 @@ x_test_new = np.array(x_test_new) # X_Test array reshaped ( , 30,30,3)
 """ Validation Phase: Splits and solving Dataset Imbalanced """
 
 ## Split into Training and Validation from scratch
-train_x,valid_x,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165, random_state = 29)
+#train_x,valid_x,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.165, random_state = 29)
+#print("TRAINING shape x  e  y:",train_x.shape, train_label.shape)
+#print("VALIDATION shape x e y :",valid_x.shape, valid_label.shape)
+
+#train_x, train_label = shuffle(train_x, train_label, random_state=29)
+
+## Split into Training and Validation from scratch for Oversampling
+train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.165, random_state=29)
+
+valid_x_oversampling = []
+for i in range(len(valid_x)):
+    valid_x_oversampling.append(valid_x[i].reshape(30,30,3))
+
+valid_x_oversampling = np.array(valid_x_oversampling)
 print("TRAINING shape x  e  y:",train_x.shape, train_label.shape)
 print("VALIDATION shape x e y :",valid_x.shape, valid_label.shape)
 
-train_x, train_label = shuffle(train_x, train_label, random_state=13)
-
-## Split into Training and Validation from scratch for Oversampling
-#train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.165, random_state=29)
-
-#valid_x_oversampling = []
-#for i in range(len(valid_x)):
-#    valid_x_oversampling.append(valid_x[i].reshape(30,30,3))
-
-#valid_x_oversampling = np.array(valid_x_oversampling)"""
 
 ## Solving Imbalanced Dataset (eyespots: 3131 | spot: 5142)
 
@@ -144,7 +149,7 @@ x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling,
 
 # - 2º Approach: Data Augmentation
     ## better results
-#datagen = ImageDataGenerator(rotation_range=30,width_shift_range=0.2,height_shift_range=0.2,horizontal_flip=True,fill_mode="nearest")
+"""#datagen = ImageDataGenerator(rotation_range=30,width_shift_range=0.2,height_shift_range=0.2,horizontal_flip=True,fill_mode="nearest")
 datagen = ImageDataGenerator(zoom_range=0.1, fill_mode="nearest")
 #eyespots 1
 for n in eyespots_index[0:1000]:
@@ -169,28 +174,6 @@ for images in os.listdir("preview/"):
         if ctr == 1671:
             break
         
-# spots 0       
-"""for n in eyespots_index[0:1000]:
-    img = load_img('trainingset/0spots/%d.png'%(n))
-    np_x = img_to_array(img)
-    #print("first shape",np_x.shape)
-    np_x = np_x.reshape((1,) + np_x.shape)
-    #print("second shape", np_x.shape)
-    i = 0
-    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='preview',save_prefix='augmented',save_format='png'):
-        i += 1
-        if i > 5:
-            break
-ctr = 0
-for images in os.listdir("preview0/"):
-    if (images.endswith(".png")):
-        img = load_img("preview0/" + images)
-        #print(images)
-        np_x = img_to_array(img)
-        train_x = np.append(train_x,[np_x],axis = 0)
-        ctr += 1
-        if ctr == 2011:
-            break"""
     
 y_aug = np.ones([1671,])
 train_label = np.append(train_label,y_aug)
@@ -205,16 +188,115 @@ for i in range(0,len(train_label)):
 
 print("NUMERO DE EYESPOTS  E SPOTS NO TREINO",counter_eyespots, counter_spots)       
 
-
 print("SHAPE DO TREINO", train_x.shape)
 print("SHAPE DO TREINO Y", train_label.shape)
 
-train_x, train_label = shuffle(train_x, train_label, random_state=13)
+train_x, train_label = shuffle(train_x, train_label, random_state=13)"""
 
 # - 3º Approach: Class Weights
     ## worse results 
   # class 0, weight 1
   # class 1, weight 1.66
+
+"""------------------------- x --------------------------"""
+# - 4º Approach: Oversampling + Data Augmentation
+
+df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
+df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
+print("Normal Dataset:", df_y_train.value_counts())
+
+smote = RandomOverSampler(sampling_strategy='minority')
+x_oversampling, y_oversampling = smote.fit_resample(train_x, df_y_train)
+
+print("Data Oversampling:", y_oversampling.value_counts()) #4289 4289
+y_oversampling = np.array(y_oversampling)
+
+x_oversampling_new = []
+for i in range(len(x_oversampling)):
+    x_oversampling_new.append(x_oversampling[i].reshape(30,30,3))
+    if y_oversampling[i] == 1:
+        #print("EYESPOTS indices:", i)
+        #img  = Image.fromarray(x_oversampling_new[i])
+        #img.save("oversampling/eyespots/%d.png"%(i))
+        count_eyespot_train += 1
+    else:
+        #print("SPOTS indice:", i)
+        #img  = Image.fromarray(x_oversampling_new[i])
+        #img.save("oversampling/spots/%d.png"%(i))
+        count_spot_train += 1
+
+x_oversampling_new = np.array(x_oversampling_new)
+#print(x_oversampling_new.shape)
+x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state = 29)
+
+counter_eyespots = 0
+counter_spots = 0
+for i in range(0,len(y_oversampling)):
+    if y_oversampling[i]==1:
+        counter_eyespots+=1
+    else:
+        counter_spots+=1
+
+print("Nº eyespots e spots oversampling:",counter_eyespots, counter_spots)     
+
+datagen = ImageDataGenerator(zoom_range=0.1, fill_mode="nearest")
+#eyespots 1
+for n in eyespots_index[0:1000]:
+    img = load_img('trainingset/1eyespots/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='aug1',save_prefix='aug_eyespot',save_format='png'):
+        i += 1
+        if i > 5:
+            break
+
+ctr = 0
+for images in os.listdir("aug1/"):
+    if (images.endswith(".png")):
+        img = load_img("aug1/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
+        ctr += 1
+        if ctr == 2500:
+            break        
+
+y_aug1 = np.ones([2500,])
+y_oversampling = np.append(y_oversampling,y_aug1)
+
+for n in spots_index[0:1000]:
+    img = load_img('trainingset/0spots/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='aug0',save_prefix='aug_spot',save_format='png'):
+        i += 1
+        if i > 5:
+            break
+
+ctr = 0
+for images in os.listdir("aug0/"):
+    if (images.endswith(".png")):
+        img = load_img("aug0/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
+        ctr += 1
+        if ctr == 2500:
+            break
+
+y_aug0 = np.ones([2500,])
+y_oversampling = np.append(y_oversampling,y_aug0)
+
+x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state=29)
+
+print("shape x os + aug", x_oversampling_new.shape)
+print("shape y os + aug", y_oversampling.shape)
 
 ## Data normalization for imbalanced dataset validation
 x_train_new = x_train_new/255
@@ -224,20 +306,11 @@ x_test = x_test/255
 train_x = train_x/255
 valid_x = valid_x/255
 
-"""------------------------- x --------------------------"""
+x_oversampling_new = x_oversampling_new/255
+
 
 """ Data Preparing to Test set Prediction Phase: solving Dataset Imbalanced """
-
-## Data Augmentation
-
-
-
-
-
-
-
-
-
+## Data Augmentation - 100%
 
 ##  Convolutional Neural Network Models
 #callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=200, verbose=1)
@@ -259,7 +332,7 @@ model.compile(optimizer = 'adam' , loss = 'binary_crossentropy',metrics = ['acc'
 
 ## Fit the training data into the model
 #hist = model.fit(train_x, train_label, batch_size=64, epochs=25)
-hist = model.fit(train_x, train_label, batch_size=64, epochs=25)
+hist = model.fit(x_oversampling_new, y_oversampling, batch_size=64, epochs=25)
 
 ## Predict for validation data
 valid_pred = model.predict(valid_x)
