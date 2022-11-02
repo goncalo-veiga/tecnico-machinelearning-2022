@@ -31,7 +31,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import plot_confusion_matrix
-from sklearn.metrics import f1_score, balanced_accuracy_score
+from sklearn.metrics import f1_score, balanced_accuracy_score, accuracy_score
 from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
 
 
@@ -114,13 +114,20 @@ x_test_new = np.array(x_test_new)
 #data split
 #train_x,valid_x,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.2, random_state=1)
 #train_x, train_label = shuffle(train_x, train_label, random_state=1)
+
 train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.15, random_state=9)
 valid_x_oversampling = []
 for i in range(len(valid_x)):
     valid_x_oversampling.append(valid_x[i].reshape(5,5,3))
 
 valid_x_oversampling = np.array(valid_x_oversampling)
-## DATA AUGMENTATION
+
+
+
+
+
+
+
 
 ## Oversampling
 df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
@@ -168,24 +175,22 @@ valid_x_oversampling = valid_x_oversampling/255
 x_oversampling_new = x_oversampling_new/255
 #x_oversampling_new = x_oversampling_new/255
 
-## To categorical before CNN
+## To categorical before NN
 y_train = to_categorical(y_train, 3)
 y_oversampling = to_categorical(y_oversampling, 3)
 valid_label = to_categorical(valid_label, 3)
 
-##  Convolutional Neural Network Models
+##  1) Neural Network - Multilayer Perceptron
 #callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=200, verbose=1)
 model = models.Sequential([
-    #layers.Conv2D(32, (5,5), padding = 'same', activation = 'relu', input_shape=(5,5,3)),
-    #layers.MaxPooling2D(),
-    #layers.Dropout(0.25),
-    #layers.Conv2D(16, (5,5), padding = 'same', activation = 'relu'),
-    #layers.MaxPooling2D(),
-    #layers.Dropout(0.25),
-    #layers.Flatten(),
-    layers.Dense(75, activation = "relu", input_shape=(5,5,3)),
-    layers.Dense(150, activation= 'relu'),
+    layers.Flatten(input_shape=(5,5,3)),
+    layers.Dense(100, activation = "relu"),
+    #layers.Dense(, activation= 'relu'),
+    layers.Dense(100, activation = 'relu'),
     #layers.Dropout(0.4),
+    #layers.Dense(100, activation = 'relu'),
+    layers.Dense(50, activation = 'relu'),
+    layers.Dense(25, activation = 'relu'),
     layers.Dense(3, activation = 'softmax'),
 ])
 model.summary()
@@ -194,7 +199,7 @@ model.summary()
 model.compile(optimizer = 'adam' , loss = 'categorical_crossentropy',metrics = ['acc'])
 
 ## Fit the training data into the model
-hist = model.fit(train_x, train_label, batch_size=64, epochs=25)
+#hist = model.fit(train_x, train_label, batch_size=64, epochs=25)
 hist = model.fit(x_oversampling_new, y_oversampling, batch_size=64, epochs=25, validation_data=(valid_x_oversampling, valid_label))
 
 valid_pred = model.predict(valid_x_oversampling)
@@ -203,6 +208,7 @@ print("label original", np.argmax(valid_label, axis=-1))
 print("label predicted", np.argmax(valid_pred, axis=-1))
 
 print("Validation Balanced Accuracy Score:", balanced_accuracy_score(np.argmax(valid_label, axis=-1), np.argmax(valid_pred, axis=-1)))
+print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), np.argmax(valid_pred, axis=-1)))
 
 ## 676x (0,1,2)
 ## 676x (0,1,2)
@@ -233,4 +239,5 @@ plt.legend()
 
 plt.show() """
 
-
+## 2) Support Vector Machine
+## 3) Decision Tree
