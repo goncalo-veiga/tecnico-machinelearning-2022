@@ -33,9 +33,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import f1_score, balanced_accuracy_score, accuracy_score
 from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
-
-
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.model_selection import GridSearchCV
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 #np.set_printoptions(threshold=sys.maxsize)
@@ -109,7 +107,10 @@ for i in range(len(x_test)):
     #img.save("x_test/%d.png"%(i))
         
 x_train_new = np.array(x_train_new) 
+
+print("treino", x_train_new.shape)
 x_test_new = np.array(x_test_new) 
+print("teste", x_test_new)
 
 #data split
 #train_x,valid_x,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.2, random_state=1)
@@ -128,7 +129,7 @@ valid_x_oversampling = np.array(valid_x_oversampling)
 
 
 
-
+"""
 ## Oversampling
 df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
 df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
@@ -178,11 +179,11 @@ x_oversampling_new = x_oversampling_new/255
 ## To categorical before NN
 y_train = to_categorical(y_train, 3)
 y_oversampling = to_categorical(y_oversampling, 3)
-valid_label = to_categorical(valid_label, 3)
+valid_label = to_categorical(valid_label, 3)"""
 
 ##  1) Neural Network - Multilayer Perceptron
 #callback = keras.callbacks.EarlyStopping(monitor='val_acc', patience=200, verbose=1)
-model = models.Sequential([
+"""model = models.Sequential([
     layers.Flatten(input_shape=(5,5,3)),
     layers.Dense(100, activation = "relu"),
     #layers.Dense(, activation= 'relu'),
@@ -208,8 +209,7 @@ print("label original", np.argmax(valid_label, axis=-1))
 print("label predicted", np.argmax(valid_pred, axis=-1))
 
 print("Validation Balanced Accuracy Score:", balanced_accuracy_score(np.argmax(valid_label, axis=-1), np.argmax(valid_pred, axis=-1)))
-print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), np.argmax(valid_pred, axis=-1)))
-
+print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), np.argmax(valid_pred, axis=-1)))"""
 ## 676x (0,1,2)
 ## 676x (0,1,2)
 
@@ -240,4 +240,75 @@ plt.legend()
 plt.show() """
 
 ## 2) Support Vector Machine
+## Without Oversampling
+"""train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.2, random_state=9)
+#train_x, train_label = shuffle(train_x, train_label, random_state=9)
+#train_label = np.argmax(train_label, axis=-1)
+#print("TRAINX SHAPE",train_x.shape)
+#print("YTRAIN SHAPE", train_label.shape)
+
+## Oversampling
+df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
+df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
+print("Normal Dataset:", df_y_train.value_counts())
+print(len(df_x_train), len(df_y_train))
+
+smote = RandomOverSampler()
+
+#x_oversampling, y_oversampling = smote.fit_resample(train_x, df_y_train)
+x_oversampling, y_oversampling = smote.fit_resample(train_x, train_label)
+
+print(x_oversampling.shape)
+print(y_oversampling.shape)
+print(valid_label.shape)
+#print("Data Oversampling:", y_oversampling.value_counts())
+#y_oversampling = np.array(y_oversampling)
+#y_oversampling = y_oversampling.tolist()
+print(y_oversampling)
+print(x_oversampling)
+print(valid_label)
+
+train_x = train_x/255
+valid_x = valid_x/255
+x_oversampling = x_oversampling/255
+
+svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9)
+
+lsvc = LinearSVC(multi_class='ovr', random_state = 9)
+
+#svc.fit(train_x, train_label)
+#lsvc.fit(train_x, train_label)
+
+svc.fit(x_oversampling, y_oversampling)
+#lsvc.fit(x_oversampling, y_oversampling)
+
+valid_pred = svc.predict(valid_x)
+#valid_pred_l = lsvc.predict(valid_x)
+
+print("valid bacano", valid_pred[0:])
+print("Validation Balanced Accuracy Score:", balanced_accuracy_score((np.argmax(valid_label, axis=-1)), valid_pred[0:]))
+print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), valid_pred[0:]))"""
+#print("LSVC valid bacano", valid_pred_l[0:])
+#print("LSVC Validation Balanced Accuracy Score:", balanced_accuracy_score((np.argmax(valid_label, axis=-1)), valid_pred_l[0:]))
+#print("LSVC Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), valid_pred_l[0:]))
+#print("done")
+
+
+train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.2, random_state=9)
+train_x = train_x/255
+valid_x = valid_x/255
+#x_oversampling = x_oversampling/255
+
+svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9, class_weight='balanced')
+
+lsvc = LinearSVC(multi_class='ovr', random_state = 9)
+svc.fit(train_x, train_label)
+#lsvc.fit(x_oversampling, y_oversampling)
+
+valid_pred = svc.predict(valid_x)
+#valid_pred_l = lsvc.predict(valid_x)
+
+print("valid bacano", valid_pred[0:])
+print("Validation Balanced Accuracy Score:", balanced_accuracy_score((np.argmax(valid_label, axis=-1)), valid_pred[0:]))
+print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), valid_pred[0:]))
 ## 3) Decision Tree
