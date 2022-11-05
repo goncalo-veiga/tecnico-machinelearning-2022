@@ -1,3 +1,8 @@
+"""
+Authors:
+Gonçalo Veiga - 96738
+Gonçalo Galante - 96216
+"""
 import sys
 import numpy as np
 import pandas as pd
@@ -85,11 +90,9 @@ for j in range(0,676):
     x_train_patches.append(x_train_new[j])
     
 x_train_patches = np.array(x_train_patches) 
-"""
-#print(x_train_patches)
-#print(x_train_patches.shape)
 
-"""
+
+
 for i in range(len(x_train)):
     if y_train[i] == 0:
         img  = Image.fromarray(x_train_new[i])
@@ -241,10 +244,22 @@ x_oversampling, y_oversampling = smote.fit_resample(train_x, df_y_train)
 
 print("Data Oversampling:", y_oversampling.value_counts())
 y_oversampling = np.array(y_oversampling)
-print(x_oversampling, x_oversampling.shape)
-print(y_oversampling, y_oversampling.shape)
+x_oversampling, y_oversampling = shuffle(x_oversampling, y_oversampling, random_state=9)
+# Oversampling full data
+df_y_train_final = pd.DataFrame({'y_train': y_train.tolist()})
+df_x_train_final = pd.DataFrame({'x_train': x_train.tolist()})
 
-# - 2º Approach: Oversampling + Data Augmentation
+smote = RandomOverSampler()
+x_oversampling_final, y_oversampling_final = smote.fit_resample(x_train, df_y_train_final)
+
+print("Full Data Oversampling:", y_oversampling_final.value_counts())
+y_oversampling_final = np.array(y_oversampling_final)
+print("Shape: ",x_oversampling_final.shape)
+x_oversampling_final, y_oversampling_final = shuffle(x_oversampling_final, y_oversampling_final, random_state=9)
+
+
+
+# - 2nd Approach: Oversampling + Data Augmentation
 """
 x_oversampling_new = []
 for i in range(len(x_oversampling)):
@@ -269,7 +284,7 @@ x_oversampling_new = np.array(x_oversampling_new)
 #x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state = 9)
    
 
-datagen = ImageDataGenerator(rotation_range=30, fill_mode="nearest")
+datagen = ImageDataGenerator(rotation_range=30,zoom_range=0.5,horizontal_flip=True, fill_mode="nearest")
 
 directory = os.getcwd()
 try:
@@ -305,7 +320,7 @@ for i in range(len(x_oversampling_new)):
     elif y_oversampling[i] == 2:
         class2_index.append(i)
 
-for n in class0_index[0:1000]:
+for n in class0_index[0:12000]:
     img = load_img('oversampling/0_class/%d.png'%(n))
     np_x = img_to_array(img)
     #print("first shape",np_x.shape)
@@ -325,13 +340,13 @@ for images in os.listdir("aug0/"):
         np_x = img_to_array(img)
         x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
         ctr += 1
-        if ctr == 2500:
+        if ctr == 12000:
             break        
 
-y_aug0 = np.zeros([2500,])
+y_aug0 = np.zeros([10000,])
 y_oversampling = np.append(y_oversampling,y_aug0)
 
-for n in class1_index[0:1000]:
+for n in class1_index[0:12000]:
     img = load_img('oversampling/1_class/%d.png'%(n))
     np_x = img_to_array(img)
     #print("first shape",np_x.shape)
@@ -351,14 +366,14 @@ for images in os.listdir("aug1/"):
         np_x = img_to_array(img)
         x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
         ctr += 1
-        if ctr == 2500:
+        if ctr == 11000:
             break        
 
-y_aug1 = np.ones([2500,])
+y_aug1 = np.ones([10000,])
 y_oversampling = np.append(y_oversampling,y_aug1)
 
 
-for n in class2_index[0:1000]:
+for n in class2_index[0:12000]:
     img = load_img('oversampling/2_class/%d.png'%(n))
     np_x = img_to_array(img)
     #print("first shape",np_x.shape)
@@ -378,10 +393,10 @@ for images in os.listdir("aug2/"):
         np_x = img_to_array(img)
         x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
         ctr += 1
-        if ctr == 2500:
+        if ctr == 12000:
             break        
 
-y_aug2 = np.full([2500,],2)
+y_aug2 = np.full([10000,],2)
 print("aug2??? ",y_aug2)
 y_oversampling = np.append(y_oversampling,y_aug2)
 
@@ -409,15 +424,17 @@ x_oversampling_new = x_oversampling_new.reshape(x_oversampling_new.shape[0],75)
 print("shape over",x_oversampling_new.shape)
 np.save('x_over', x_oversampling_new)
 np.save('y_over', y_oversampling)
-"""
-x_oversampling_new = np.load('x_over.npy')
-y_oversampling = np.load('y_over.npy')
 
+#x_oversampling_new = np.load('x_over.npy')
+#y_oversampling = np.load('y_over.npy')
+"""
 ## data normalization
 train_x = train_x/255
 valid_x = valid_x/255
 x_oversampling = x_oversampling/255
-x_oversampling_new = x_oversampling_new/255
+x_oversampling_final = x_oversampling_final/255
+x_test = x_test/255
+#x_oversampling_new = x_oversampling_new/255
 
 ## 2) Support Vector Machine
 def method_svc(x_data,y_data):
@@ -453,8 +470,8 @@ def method_lsvc(x_data,y_data):
 
 ## 5) k-Nearest Neighbors
 def method_knn(x_data,y_data,numb_neigh):
-    # 4 neigh is best
-    neigh = KNeighborsClassifier(n_neighbors=numb_neigh, weights='uniform')
+    # 4 n-neigh is best
+    neigh = KNeighborsClassifier(n_neighbors=numb_neigh)
     neigh.fit(x_data, y_data)
     valid_pred_knn = neigh.predict(valid_x)
     knn_bacc = balanced_accuracy_score((valid_label), valid_pred_knn)
@@ -462,8 +479,14 @@ def method_knn(x_data,y_data,numb_neigh):
     print(" KNN | Validation Accuracy: ", accuracy_score(valid_label, valid_pred_knn))
     return knn_bacc
 
-for i in range(2,13):
-    method_knn(x_oversampling_new,y_oversampling,i)
+
+method_knn(x_oversampling,y_oversampling,4)
+
+neigh = KNeighborsClassifier(n_neighbors=4)
+neigh.fit(x_oversampling_final, y_oversampling_final)
+y_pred_knn = neigh.predict(x_test)
+print("shape y pred:",y_pred_knn.shape)
+np.save('y_test2',y_pred_knn)
 
 
 
