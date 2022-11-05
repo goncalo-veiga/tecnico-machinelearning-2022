@@ -33,6 +33,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import f1_score, balanced_accuracy_score, accuracy_score
 from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import GridSearchCV
@@ -75,12 +76,14 @@ for i in range(len(x_train)):
     
     
 x_train_patches = []
+"""
 for j in range(0,676):
     img = Image.fromarray(x_train_new[j])
     img.save("dataset1/%d.png"%(j))
     x_train_patches.append(x_train_new[j])
     
 x_train_patches = np.array(x_train_patches) 
+"""
 #print(x_train_patches)
 #print(x_train_patches.shape)
 print("done")
@@ -222,8 +225,6 @@ plt.legend()
 
 plt.show() """
 
-## 2) Support Vector Machine
-
 train_x, train_label = shuffle(train_x, train_label, random_state=9)
 #train_label = np.argmax(train_label, axis=-1)
 print(train_label)
@@ -240,91 +241,54 @@ print(x_oversampling, x_oversampling.shape)
 print(y_oversampling, y_oversampling.shape)
 
 ## data normalization
-#train_x = train_x/255
-valid_x = valid_x/255
-x_oversampling = x_oversampling/255
-
-#svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9, class_weight='balanced') # class weights
-svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9) # oversampling
-svc.fit(x_oversampling, y_oversampling)
-valid_pred = svc.predict(valid_x)
-
-print(valid_label)
-
-print(" SVC | Validation Balanced Accuracy Score:", balanced_accuracy_score((valid_label), valid_pred))
-print(" SVC | Validation Accuracy: ", accuracy_score(valid_label, valid_pred))
-
-"""
-## 2) Support Vector Machine
-## Without Oversampling
-#train_x,valid_x,train_label,valid_label = train_test_split(x_train, y_train, test_size=0.2, random_state=9)
-train_x, train_label = shuffle(train_x, train_label, random_state=9)
-train_label = np.argmax(train_label, axis=-1)
-#print("TRAINX SHAPE",train_x.shape)
-#print("YTRAIN SHAPE", train_label.shape)
-
-## Oversampling
-df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
-df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
-print("Normal Dataset:", df_y_train.value_counts())
-print(len(df_x_train), len(df_y_train))
-
-smote = RandomOverSampler()
-
-#x_oversampling, y_oversampling = smote.fit_resample(train_x, df_y_train)
-x_oversampling, y_oversampling = smote.fit_resample(train_x, train_label)
-
-print(x_oversampling.shape)
-print(y_oversampling.shape)
-print(valid_label.shape)
-#print("Data Oversampling:", y_oversampling.value_counts())
-#y_oversampling = np.array(y_oversampling)
-#y_oversampling = y_oversampling.tolist()
-print(y_oversampling)
-print(x_oversampling)
-print(valid_label)
-
 train_x = train_x/255
 valid_x = valid_x/255
 x_oversampling = x_oversampling/255
 
-svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9)
+## 2) Support Vector Machine
+def method_svc(x_data,y_data):
+    #svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9, class_weight='balanced') # class weights
+    svc = SVC(decision_function_shape='ovo', verbose = True, random_state=9) # oversampling
+    svc.fit(x_data, y_data)
+    valid_pred = svc.predict(valid_x)
+    svc_bacc = balanced_accuracy_score((valid_label), valid_pred)
+    print(" SVC | Validation Balanced Accuracy Score:", svc_bacc)
+    print(" SVC | Validation Accuracy: ", accuracy_score(valid_label, valid_pred))
+    return svc_bacc
 
-lsvc = LinearSVC(multi_class='ovr', random_state = 9)
-
-#svc.fit(train_x, train_label)
-#lsvc.fit(train_x, train_label)
-
-svc.fit(x_oversampling, y_oversampling)
-#lsvc.fit(x_oversampling, y_oversampling)
-
-valid_pred = svc.predict(valid_x)
-#valid_pred_l = lsvc.predict(valid_x)
-
-print("valid bacano", valid_pred[0:])
-print("Validation Balanced Accuracy Score:", balanced_accuracy_score((np.argmax(valid_label, axis=-1)), valid_pred[0:]))
-print("Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), valid_pred[0:]))
-#print("LSVC valid bacano", valid_pred_l[0:])
-#print("LSVC Validation Balanced Accuracy Score:", balanced_accuracy_score((np.argmax(valid_label, axis=-1)), valid_pred_l[0:]))
-#print("LSVC Validation Accuracy: ", accuracy_score(np.argmax(valid_label, axis=-1), valid_pred_l[0:]))
-#print("done")"""
 
 ## 3) Decision Tree
-
-clf = DecisionTreeClassifier(criterion = 'entropy', random_state=9)
-clf.fit(x_oversampling, y_oversampling)
-valid_pred_dt = clf.predict(valid_x)
-
-print(" DT | Validation Balanced Accuracy Score:", balanced_accuracy_score((valid_label), valid_pred_dt))
-print(" DT |Validation Accuracy: ", accuracy_score(valid_label, valid_pred_dt))
+def method_dt(x_data,y_data):
+    clf = DecisionTreeClassifier(criterion = 'entropy', random_state=9)
+    clf.fit(x_data, y_data)
+    valid_pred_dt = clf.predict(valid_x)
+    dt_bacc = balanced_accuracy_score((valid_label), valid_pred_dt)
+    print(" DT | Validation Balanced Accuracy Score:", dt_bacc)
+    print(" DT |Validation Accuracy: ", accuracy_score(valid_label, valid_pred_dt))
+    return dt_bacc
 
 ## 4) Linear Support Vector Machine 
-lsvc = LinearSVC()
-lsvc.fit(x_oversampling, y_oversampling)
-valid_pred_lsvc = lsvc.predict(valid_x)
+def method_lsvc(x_data,y_data):
+    lsvc = LinearSVC()
+    lsvc.fit(x_data, y_data)
+    valid_pred_lsvc = lsvc.predict(valid_x)
+    lsvc_bacc = balanced_accuracy_score((valid_label), valid_pred_lsvc)
+    print("LSVC | Validation Balanced Accuracy Score:", lsvc_bacc)
+    print("LSVC | Validation Accuracy: ", accuracy_score(valid_label, valid_pred_lsvc))
+    return lsvc_bacc
 
-print("LSVC | Validation Balanced Accuracy Score:", balanced_accuracy_score((valid_label), valid_pred_lsvc))
-print("LSVC | Validation Accuracy: ", accuracy_score(valid_label, valid_pred_lsvc))
+## 5) k-Nearest Neighbors
+def method_knn(x_data,y_data,numb_neigh):
+    # 4 neigh is best
+    neigh = KNeighborsClassifier(n_neighbors=numb_neigh, weights='uniform')
+    neigh.fit(x_data, y_data)
+    valid_pred_knn = neigh.predict(valid_x)
+    knn_bacc = balanced_accuracy_score((valid_label), valid_pred_knn)
+    print(" KNN | Validation Balanced Accuracy Score:", knn_bacc)
+    print(" KNN | Validation Accuracy: ", accuracy_score(valid_label, valid_pred_knn))
+    return knn_bacc
 
+
+method_knn(x_oversampling,y_oversampling,4)
 
 
