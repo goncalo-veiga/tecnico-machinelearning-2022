@@ -34,6 +34,8 @@ from sklearn.metrics import plot_confusion_matrix
 from sklearn.metrics import f1_score, balanced_accuracy_score, accuracy_score
 from sklearn.feature_extraction.image import extract_patches_2d, reconstruct_from_patches_2d
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import RadiusNeighborsClassifier
+from sklearn.multioutput import MultiOutputClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import GridSearchCV
@@ -86,29 +88,31 @@ x_train_patches = np.array(x_train_patches)
 """
 #print(x_train_patches)
 #print(x_train_patches.shape)
-print("done")
-    #if y_train[i] == 0:
-    #    img  = Image.fromarray(x_train_new[i])
-    #    img.save("0_train/%d.png"%(i))
-    #elif y_train[i] == 1:
-    #    img  = Image.fromarray(x_train_new[i])
-    #    img.save("1_train/%d.png"%(i))
-    #elif y_train[i] == 2:
-    #    img  = Image.fromarray(x_train_new[i])
-    #    img.save("2_train/%d.png"%(i))
+
+"""
+for i in range(len(x_train)):
+    if y_train[i] == 0:
+        img  = Image.fromarray(x_train_new[i])
+        img.save("0_train/%d.png"%(i))
+    elif y_train[i] == 1:
+        img  = Image.fromarray(x_train_new[i])
+        img.save("1_train/%d.png"%(i))
+    elif y_train[i] == 2:
+        img  = Image.fromarray(x_train_new[i])
+        img.save("2_train/%d.png"%(i))
 
 x_test_new = []
 for i in range(len(x_test)):
     x_test_new.append(x_test[i].reshape(5,5,3))
     #img  = Image.fromarray(x_test_new[i])
     #img.save("x_test/%d.png"%(i))
-        
+      
 x_train_new = np.array(x_train_new) 
 
 print("treino", x_train_new.shape)
 x_test_new = np.array(x_test_new) 
 print("teste", x_test_new)
-
+"""
 #data split
 #train_x,valid_x,train_label,valid_label = train_test_split(x_train_new, y_train, test_size=0.2, random_state=1)
 #train_x, train_label = shuffle(train_x, train_label, random_state=1)
@@ -225,9 +229,9 @@ plt.legend()
 
 plt.show() """
 
-train_x, train_label = shuffle(train_x, train_label, random_state=9)
+#train_x, train_label = shuffle(train_x, train_label, random_state=9)
 #train_label = np.argmax(train_label, axis=-1)
-print(train_label)
+#print(train_label)
 
 df_y_train = pd.DataFrame({'y_train': train_label.tolist()})
 df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
@@ -235,15 +239,185 @@ df_x_train = pd.DataFrame({'x_train': train_x.tolist()})
 smote = RandomOverSampler()
 x_oversampling, y_oversampling = smote.fit_resample(train_x, df_y_train)
 
-print("Data Oversampling:", y_oversampling.value_counts()) #4289 4289
+print("Data Oversampling:", y_oversampling.value_counts())
 y_oversampling = np.array(y_oversampling)
 print(x_oversampling, x_oversampling.shape)
 print(y_oversampling, y_oversampling.shape)
+
+# - 2º Approach: Oversampling + Data Augmentation
+"""
+x_oversampling_new = []
+for i in range(len(x_oversampling)):
+    x_oversampling_new.append(x_oversampling[i].reshape(5,5,3))
+    
+    if y_oversampling[i] == 0:
+        img  = Image.fromarray(x_oversampling_new[i])
+        img.save("oversampling/0_class/%d.png"%(i))
+    
+    elif y_oversampling[i] == 1:
+        img  = Image.fromarray(x_oversampling_new[i])
+        img.save("oversampling/1_class/%d.png"%(i))
+    
+    elif y_oversampling[i] == 2:
+        img  = Image.fromarray(x_oversampling_new[i])
+        img.save("oversampling/2_class/%d.png"%(i))
+    
+        
+
+x_oversampling_new = np.array(x_oversampling_new)
+#print(x_oversampling_new.shape)
+#x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state = 9)
+   
+
+datagen = ImageDataGenerator(rotation_range=30, fill_mode="nearest")
+
+directory = os.getcwd()
+try:
+    shutil.rmtree(directory + "/aug0")
+except OSError:
+    print("No directory to delete")
+    
+try:
+    shutil.rmtree(directory + "/aug1")
+except OSError:
+    print("No directory to delete")
+
+try:
+    shutil.rmtree(directory + "/aug2")
+except OSError:
+    print("No directory to delete")
+
+os.makedirs(directory + "/aug0")
+os.makedirs(directory + "/aug1")
+os.makedirs(directory + "/aug2")
+
+
+class0_index = []
+class1_index = []
+class2_index = []
+for i in range(len(x_oversampling_new)):
+    if y_oversampling[i] == 0:
+        class0_index.append(i)
+
+    elif y_oversampling[i] == 1:
+        class1_index.append(i)
+    
+    elif y_oversampling[i] == 2:
+        class2_index.append(i)
+
+for n in class0_index[0:1000]:
+    img = load_img('oversampling/0_class/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='aug0',save_prefix='aug_class0',save_format='png'):
+        i += 1
+        if i > 5:
+            break
+
+ctr = 0
+for images in os.listdir("aug0/"):
+    if (images.endswith(".png")):
+        img = load_img("aug0/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
+        ctr += 1
+        if ctr == 2500:
+            break        
+
+y_aug0 = np.zeros([2500,])
+y_oversampling = np.append(y_oversampling,y_aug0)
+
+for n in class1_index[0:1000]:
+    img = load_img('oversampling/1_class/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='aug1',save_prefix='aug_class1',save_format='png'):
+        i += 1
+        if i > 5:
+            break
+
+ctr = 0
+for images in os.listdir("aug1/"):
+    if (images.endswith(".png")):
+        img = load_img("aug1/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
+        ctr += 1
+        if ctr == 2500:
+            break        
+
+y_aug1 = np.ones([2500,])
+y_oversampling = np.append(y_oversampling,y_aug1)
+
+
+for n in class2_index[0:1000]:
+    img = load_img('oversampling/2_class/%d.png'%(n))
+    np_x = img_to_array(img)
+    #print("first shape",np_x.shape)
+    np_x = np_x.reshape((1,) + np_x.shape)
+    #print("second shape", np_x.shape)
+    i = 0
+    for batch in datagen.flow(np_x, batch_size=1, save_to_dir='aug2',save_prefix='aug_class2',save_format='png'):
+        i += 1
+        if i > 5:
+            break
+
+ctr = 0
+for images in os.listdir("aug2/"):
+    if (images.endswith(".png")):
+        img = load_img("aug2/" + images)
+        #print(images)
+        np_x = img_to_array(img)
+        x_oversampling_new = np.append(x_oversampling_new,[np_x],axis = 0)
+        ctr += 1
+        if ctr == 2500:
+            break        
+
+y_aug2 = np.full([2500,],2)
+print("aug2??? ",y_aug2)
+y_oversampling = np.append(y_oversampling,y_aug2)
+
+
+x_oversampling_new, y_oversampling = shuffle(x_oversampling_new, y_oversampling, random_state=9)
+
+print("shape x os + aug", x_oversampling_new.shape)
+print("shape y os + aug", y_oversampling.shape)
+
+counter_class0 = 0
+counter_class1 = 0
+counter_class2 = 0
+for i in range(0,len(y_oversampling)):
+    if y_oversampling[i]==0:
+        counter_class0+=1
+    elif y_oversampling[i]==1:
+        counter_class1+=1
+    elif y_oversampling[i]==2:
+        counter_class2+=1
+    
+
+print("nº class 0,1,2", counter_class0, counter_class1, counter_class2)
+
+x_oversampling_new = x_oversampling_new.reshape(x_oversampling_new.shape[0],75)
+print("shape over",x_oversampling_new.shape)
+np.save('x_over', x_oversampling_new)
+np.save('y_over', y_oversampling)
+"""
+x_oversampling_new = np.load('x_over.npy')
+y_oversampling = np.load('y_over.npy')
 
 ## data normalization
 train_x = train_x/255
 valid_x = valid_x/255
 x_oversampling = x_oversampling/255
+x_oversampling_new = x_oversampling_new/255
 
 ## 2) Support Vector Machine
 def method_svc(x_data,y_data):
@@ -288,7 +462,8 @@ def method_knn(x_data,y_data,numb_neigh):
     print(" KNN | Validation Accuracy: ", accuracy_score(valid_label, valid_pred_knn))
     return knn_bacc
 
+for i in range(2,13):
+    method_knn(x_oversampling_new,y_oversampling,i)
 
-method_knn(x_oversampling,y_oversampling,4)
 
 
